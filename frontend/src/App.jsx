@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, BarChart3, Globe2, GraduationCap, RefreshCw, TimerReset } from 'lucide-react'
 import { postJson } from './lib/api.js'
 import { n } from './lib/format.js'
-import { Donut, EndorsementMonths, HorizontalBars, MonthLine, StackedHeiCountryBars } from './components/Charts.jsx'
 import { KpiCard, Panel } from './components/Panel.jsx'
-import { RouteMap } from './components/RouteMap.jsx'
+
+const loadCharts = () => import('./components/Charts.jsx')
+const Donut = lazy(() => loadCharts().then((module) => ({ default: module.Donut })))
+const EndorsementMonths = lazy(() => loadCharts().then((module) => ({ default: module.EndorsementMonths })))
+const HorizontalBars = lazy(() => loadCharts().then((module) => ({ default: module.HorizontalBars })))
+const MonthLine = lazy(() => loadCharts().then((module) => ({ default: module.MonthLine })))
+const StackedHeiCountryBars = lazy(() => loadCharts().then((module) => ({ default: module.StackedHeiCountryBars })))
+const RouteMap = lazy(() => import('./components/RouteMap.jsx').then((module) => ({ default: module.RouteMap })))
 
 const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
@@ -13,6 +19,27 @@ const TABS = [
   { id: 'hei', label: 'HEI Risk', icon: GraduationCap },
   { id: 'geo', label: 'Geography', icon: Globe2 },
 ]
+const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography' }
+const EMPTY_DASHBOARD = { overview: null, timeline: null, hei: null, geography: null }
+
+function useDebouncedFilters(filters, delay = 300) {
+  const [debounced, setDebounced] = useState(filters)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(filters), delay)
+    return () => clearTimeout(timer)
+  }, [filters.year, filters.country, filters.region, filters.sex, filters.quarter, delay])
+
+  return debounced
+}
+
+function Visualization({ children, height = 280 }) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center rounded-xl bg-slate-50 text-sm font-semibold text-slate-500" style={{ height }}>Loading visualization...</div>}>
+      {children}
+    </Suspense>
+  )
+}
 
 function Select({ label, value, options, onChange, allLabel = 'All' }) {
   return (
@@ -50,7 +77,7 @@ function Header({ tab, lastUpdatedAt, onRefresh, loading }) {
   )
 }
 
-function DataTable({ rows, columns, totalLabel = 'Total' }) {
+function DataTable({ rows, columns }) {
   const safeRows = rows || []
   return (
     <div className="max-h-[380px] overflow-auto rounded-xl border border-slate-200">
@@ -79,12 +106,12 @@ function Overview({ data }) {
         <KpiCard label="Avg Duration (Work Hours)" value={n(o.avgDurationWorkHours, 2)} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Total Interns by Region"><Donut data={o.internsByRegion || []} /></Panel>
-        <Panel title="Total Interns by Country"><Donut data={o.internsByCountry || []} /></Panel>
+        <Panel title="Total Interns by Region"><Visualization><Donut data={o.internsByRegion || []} /></Visualization></Panel>
+        <Panel title="Total Interns by Country"><Visualization><Donut data={o.internsByCountry || []} /></Visualization></Panel>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Total Interns by Program Enrolled In"><HorizontalBars data={o.internsByProgram || []} height={360} /></Panel>
-        <Panel title="Total Endorsements by Year and Month"><EndorsementMonths data={o.endorsementsByMonth || []} /></Panel>
+        <Panel title="Total Interns by Program Enrolled In"><Visualization height={360}><HorizontalBars data={o.internsByProgram || []} height={360} /></Visualization></Panel>
+        <Panel title="Total Endorsements by Year and Month"><Visualization height={300}><EndorsementMonths data={o.endorsementsByMonth || []} /></Visualization></Panel>
       </div>
     </div>
   )
@@ -106,7 +133,7 @@ function Timeline({ data }) {
           ]} />
         </Panel>
       </div>
-      <Panel title="Internship starts and Internship ends by Year and Month"><MonthLine data={t.startsEndsByMonth || []} /></Panel>
+      <Panel title="Internship starts and Internship ends by Year and Month"><Visualization height={300}><MonthLine data={t.startsEndsByMonth || []} /></Visualization></Panel>
     </div>
   )
 }
@@ -117,14 +144,14 @@ function HeiRisk({ data }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Total Interns by HEI"><HorizontalBars data={h.internsByHei || []} height={360} /></Panel>
-        <Panel title="Total Endorsements by HEI and Country"><StackedHeiCountryBars data={h.endorsementsByHeiCountry || []} countries={countries} /></Panel>
+        <Panel title="Total Interns by HEI"><Visualization height={360}><HorizontalBars data={h.internsByHei || []} height={360} /></Visualization></Panel>
+        <Panel title="Total Endorsements by HEI and Country"><Visualization height={320}><StackedHeiCountryBars data={h.endorsementsByHeiCountry || []} countries={countries} /></Visualization></Panel>
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_.7fr_1.7fr]">
-        <Panel title="Total Endorsements by Region"><HorizontalBars data={h.endorsementsByRegion || []} valueKey="totalEndorsements" height={300} /></Panel>
+        <Panel title="Total Endorsements by Region"><Visualization height={300}><HorizontalBars data={h.endorsementsByRegion || []} valueKey="totalEndorsements" height={300} /></Visualization></Panel>
         <div className="grid gap-4">
-          <Panel title="By Sex"><Donut data={h.bySex || []} /></Panel>
-          <Panel title="Type of HEI"><Donut data={h.byTypeOfHei || []} /></Panel>
+          <Panel title="By Sex"><Visualization><Donut data={h.bySex || []} /></Visualization></Panel>
+          <Panel title="Type of HEI"><Visualization><Donut data={h.byTypeOfHei || []} /></Visualization></Panel>
         </div>
         <Panel title="HEI Concentration Table">
           <DataTable rows={h.table || []} columns={[
@@ -144,10 +171,10 @@ function Geography({ data }) {
   const g = data.geography || {}
   return (
     <div className="grid gap-4">
-      <Panel title="Country Flow Map"><RouteMap routes={g.routes || []} /></Panel>
+      <Panel title="Country Flow Map"><Visualization height={380}><RouteMap routes={g.routes || []} /></Visualization></Panel>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Total Interns by Country"><Donut data={g.internsByCountry || []} /></Panel>
-        <Panel title="Total Interns by Foreign Host Establishment or Organization"><HorizontalBars data={g.hosts || []} height={360} /></Panel>
+        <Panel title="Total Interns by Country"><Visualization><Donut data={g.internsByCountry || []} /></Visualization></Panel>
+        <Panel title="Total Interns by Foreign Host Establishment or Organization"><Visualization height={360}><HorizontalBars data={g.hosts || []} height={360} /></Visualization></Panel>
       </div>
     </div>
   )
@@ -156,38 +183,79 @@ function Geography({ data }) {
 export default function App() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [tab, setTab] = useState('overview')
-  const [data, setData] = useState({ options: {}, overview: {}, timeline: {}, hei: {}, geography: {} })
-  const [loading, setLoading] = useState(false)
+  const [dataByFilter, setDataByFilter] = useState({})
+  const [options, setOptions] = useState({})
+  const [lastUpdatedAt, setLastUpdatedAt] = useState('')
+  const [requestLoading, setRequestLoading] = useState(false)
   const [error, setError] = useState('')
   const [refreshVersion, setRefreshVersion] = useState(0)
 
+  const debouncedFilters = useDebouncedFilters(filters)
+  const immediateFilterKey = useMemo(() => JSON.stringify(filters), [filters])
+  const filterKey = useMemo(() => JSON.stringify(debouncedFilters), [debouncedFilters])
+  const filtersPending = immediateFilterKey !== filterKey
+  const section = SECTION_BY_TAB[tab]
+  const sectionData = dataByFilter[filterKey] || EMPTY_DASHBOARD
+  const data = useMemo(() => ({ ...EMPTY_DASHBOARD, ...sectionData, options }), [sectionData, options])
+  const loading = filtersPending || requestLoading
   const cy = filters.year || 'All Years'
 
   useEffect(() => {
+    if (filtersPending) {
+      setRequestLoading(false)
+      setError('')
+      return undefined
+    }
+
+    if (dataByFilter[filterKey]?.[section]) {
+      setRequestLoading(false)
+      setError('')
+      return undefined
+    }
+
     let isCurrent = true
-    setLoading(true)
+    setRequestLoading(true)
     setError('')
 
-    postJson({ action: 'dashboardData', filters })
+    postJson({
+      action: 'dashboardData',
+      filters: debouncedFilters,
+      section,
+      includeOptions: !Object.keys(options).length,
+    })
       .then((res) => {
-        if (isCurrent) setData(res)
+        if (!isCurrent) return
+        if (!res[section]) throw new Error(`The dashboard backend did not return the requested ${section} section. Redeploy the updated Apps Script backend.`)
+        setDataByFilter((current) => ({
+          ...current,
+          [filterKey]: { ...(current[filterKey] || EMPTY_DASHBOARD), [section]: res[section] },
+        }))
+        if (res.options) setOptions(res.options)
+        setLastUpdatedAt(res.lastUpdatedAt || '')
       })
       .catch((err) => {
         if (isCurrent) setError(err?.message || 'Unable to load dashboard.')
       })
       .finally(() => {
-        if (isCurrent) setLoading(false)
+        if (isCurrent) setRequestLoading(false)
       })
 
     return () => { isCurrent = false }
-  }, [filters.year, filters.country, filters.region, filters.sex, filters.quarter, refreshVersion])
+  }, [filterKey, filtersPending, section, refreshVersion])
 
-  const options = data.options || {}
   const titleSuffix = cy && cy !== 'All Years' ? `- CY ${cy}` : ''
+
+  function refreshActiveSection() {
+    setDataByFilter((current) => {
+      const nextForFilter = { ...(current[filterKey] || EMPTY_DASHBOARD), [section]: null }
+      return { ...current, [filterKey]: nextForFilter }
+    })
+    setRefreshVersion((version) => version + 1)
+  }
 
   return (
     <main className="min-h-screen bg-slate-300 text-slate-900">
-      <Header tab={tab} lastUpdatedAt={data.lastUpdatedAt} loading={loading} onRefresh={() => setRefreshVersion((version) => version + 1)} />
+      <Header tab={tab} lastUpdatedAt={lastUpdatedAt} loading={loading} onRefresh={refreshActiveSection} />
       <div className="grid gap-4 px-3 pb-6 lg:grid-cols-[160px_1fr]">
         <aside className="h-fit overflow-hidden rounded-sm border-2 border-slate-900 bg-slate-200 shadow-panel">
           <Select label="Year" value={filters.year} options={options.years || []} onChange={(v) => setFilters((f) => ({ ...f, year: v }))} allLabel="All" />
@@ -205,10 +273,11 @@ export default function App() {
           </div>
           {error ? <div className="mb-4 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800"><AlertTriangle /> <span>{error}</span></div> : null}
           <div className="mb-4 text-lg font-black uppercase tracking-tight text-slate-950">{TABS.find((x) => x.id === tab)?.label} {titleSuffix}</div>
-          {tab === 'overview' && <Overview data={data} />}
-          {tab === 'timeline' && <Timeline data={data} />}
-          {tab === 'hei' && <HeiRisk data={data} />}
-          {tab === 'geo' && <Geography data={data} />}
+          {loading && (filtersPending || !data[section]) ? <Panel><div className="p-8 text-center text-sm font-semibold text-slate-500">Loading dashboard data...</div></Panel> : null}
+          {!filtersPending && data[section] && tab === 'overview' ? <Overview data={data} /> : null}
+          {!filtersPending && data[section] && tab === 'timeline' ? <Timeline data={data} /> : null}
+          {!filtersPending && data[section] && tab === 'hei' ? <HeiRisk data={data} /> : null}
+          {!filtersPending && data[section] && tab === 'geo' ? <Geography data={data} /> : null}
         </section>
       </div>
     </main>

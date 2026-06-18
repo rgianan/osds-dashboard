@@ -50,34 +50,40 @@ function doPost(e) {
     var payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     verifyToken_(payload.dashboardToken || '');
     var action = String(payload.action || '').trim();
-    if (action === 'dashboardData') return dashboardData_(payload.filters || {});
+    if (action === 'dashboardData') return dashboardData_(payload.filters || {}, payload.section || 'overview', payload.includeOptions === true);
     throw new Error('Unsupported action.');
   } catch (err) {
     return json_({ ok: false, message: errorMessage_(err) });
   }
 }
 
-function dashboardData_(filters) {
+function dashboardData_(filters, section, includeOptions) {
   filters = normalizeFilters_(filters || {});
+  section = normalizeSection_(section);
   var cache = CacheService.getScriptCache();
-  var cacheKey = 'dashboard:v1:' + Utilities.base64EncodeWebSafe(JSON.stringify(filters)).slice(0, 220);
+  var cacheKey = 'dashboard:v2:' + section + ':' + (includeOptions ? 'options:' : '') + Utilities.base64EncodeWebSafe(JSON.stringify(filters)).slice(0, 180);
   var cached = cache.get(cacheKey);
   if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
 
-  var rawRows = getSiapRows_();
+  var needsDurations = section === 'overview' || section === 'timeline';
+  var rawRows = getSiapRows_(needsDurations);
   var filtered = rawRows.filter(function(row) { return passesFilters_(row, filters); });
-  var allOptions = buildOptions_(rawRows);
 
   var response = {
     ok: true,
     lastUpdatedAt: Utilities.formatDate(new Date(), DEFAULT_TZ, 'yyyy-MM-dd HH:mm:ss'),
     filters: filters,
-    options: allOptions,
-    overview: buildOverview_(filtered),
-    timeline: buildTimeline_(filtered),
-    hei: buildHeiRisk_(filtered, allOptions.countries),
-    geography: buildGeography_(filtered)
+    section: section
   };
+
+  if (includeOptions) response.options = buildOptions_(rawRows);
+  if (section === 'overview') response.overview = buildOverview_(filtered);
+  if (section === 'timeline') response.timeline = buildTimeline_(filtered);
+  if (section === 'hei') {
+    var countries = sortAsc_(unique_(filtered.map(function(row) { return row.country; })).filter(Boolean));
+    response.hei = buildHeiRisk_(filtered, countries);
+  }
+  if (section === 'geography') response.geography = buildGeography_(filtered);
 
   var body = JSON.stringify(response);
   cache.put(cacheKey, body, getCacheSeconds_());
@@ -113,7 +119,7 @@ function verifyToken_(token) {
   if (String(token || '') !== expected) throw new Error('Unauthorized dashboard request.');
 }
 
-function getSiapRows_() {
+function getSiapRows_(includeDurations) {
   var config = getConfig_();
   var ss = SpreadsheetApp.openById(config.spreadsheetId);
   var sheet = ss.getSheetByName(config.siapSheetName);
@@ -129,7 +135,10 @@ function getSiapRows_() {
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
     if (!rowHasContent_(row)) continue;
-    rows.push({
+    var endorsementDate = toDate_(valueAt_(row, index, COL.endorsementDate));
+    var startDate = toDate_(valueAt_(row, index, COL.startDate));
+    var endDate = toDate_(valueAt_(row, index, COL.endDate));
+    var item = {
       endorsementNo: clean_(valueAt_(row, index, COL.endorsementNo)),
       region: clean_(valueAt_(row, index, COL.region)),
       sex: clean_(valueAt_(row, index, COL.sex)),
@@ -138,9 +147,9 @@ function getSiapRows_() {
       program: clean_(valueAt_(row, index, COL.program)),
       host: clean_(valueAt_(row, index, COL.host)),
       country: clean_(valueAt_(row, index, COL.country)),
-      endorsementDate: toDate_(valueAt_(row, index, COL.endorsementDate)),
-      startDate: toDate_(valueAt_(row, index, COL.startDate)),
-      endDate: toDate_(valueAt_(row, index, COL.endDate)),
+      endorsementDate: endorsementDate,
+      startDate: startDate,
+      endDate: endDate,
       fromCity: clean_(valueAt_(row, index, COL.fromCity)),
       toCity: clean_(valueAt_(row, index, COL.toCity)),
       originLat: toNumber_(valueAt_(row, index, COL.originLat)),
@@ -150,7 +159,9 @@ function getSiapRows_() {
       pathKey: clean_(valueAt_(row, index, COL.pathKey)),
       pathId: clean_(valueAt_(row, index, COL.pathId)),
       odKey: clean_(valueAt_(row, index, COL.odKey))
-    });
+    };
+    if (includeDurations) item.durationWorkHours = durationWorkHoursFromDates_(startDate, endDate);
+    rows.push(item);
   }
   return rows;
 }
@@ -194,6 +205,12 @@ function normalizeFilters_(filters) {
     region: clean_(filters.region),
     sex: clean_(filters.sex)
   };
+}
+
+function normalizeSection_(section) {
+  section = clean_(section || 'overview').toLowerCase();
+  if (['overview', 'timeline', 'hei', 'geography'].indexOf(section) === -1) throw new Error('Unsupported dashboard section.');
+  return section;
 }
 
 function passesFilters_(row, filters) {
@@ -455,21 +472,28 @@ function leadTimeDays_(r) {
 }
 
 function durationWorkHours_(r) {
-  if (!r.startDate || !r.endDate) return null;
-  return networkDaysInclusive_(r.startDate, r.endDate) * WORK_HOURS_PER_DAY;
+  if (Object.prototype.hasOwnProperty.call(r, 'durationWorkHours')) return r.durationWorkHours;
+  r.durationWorkHours = durationWorkHoursFromDates_(r.startDate, r.endDate);
+  return r.durationWorkHours;
+}
+
+function durationWorkHoursFromDates_(startDate, endDate) {
+  if (!startDate || !endDate) return null;
+  return networkDaysInclusive_(startDate, endDate) * WORK_HOURS_PER_DAY;
 }
 
 function networkDaysInclusive_(start, end) {
   var s = startOfDay_(start);
   var e = startOfDay_(end);
   if (e < s) return 0;
-  var count = 0;
-  while (s <= e) {
-    var day = Number(Utilities.formatDate(s, DEFAULT_TZ, 'u')); // 1 Mon ... 7 Sun
-    if (day >= 1 && day <= 5) count++;
-    s = addDays_(s, 1);
-  }
-  return count;
+  var totalDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+  var fullWeeks = Math.floor(totalDays / 7);
+  var remainder = totalDays % 7;
+  var startWeekday = Number(Utilities.formatDate(s, DEFAULT_TZ, 'u')) - 1; // 0 Mon ... 6 Sun
+  var weekdaysBeforeWeekend = Math.max(0, 5 - startWeekday);
+  var firstWeek = Math.min(remainder, weekdaysBeforeWeekend);
+  var wrappedWeek = Math.max(0, startWeekday + remainder - 7);
+  return fullWeeks * 5 + firstWeek + wrappedWeek;
 }
 
 function daysBetween_(start, end) {
