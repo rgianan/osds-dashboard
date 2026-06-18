@@ -3,9 +3,73 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
-body { margin: 0; background: #e5e7eb; }
-.leaflet-container { height: 100%; width: 100%; border-radius: 1rem; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
-::-webkit-scrollbar-track { background: #e2e8f0; }
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f6f8fb;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+select { font: inherit; }
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 0.75rem;
+  background: #e8eef5;
+  font-family: inherit;
+}
+
+.leaflet-control-zoom a { color: #102a43; }
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e9eef5;
+}
+
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: shimmer 1.35s infinite;
+}
+
+.section-enter { animation: section-enter 280ms ease-out both; }
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes section-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #a7b4c5; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #7f8da0; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -2,9 +2,9 @@ import React from 'react'
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer } from 'react-leaflet'
 
 const countryColor = {
-  Thailand: '#0ea5e9',
-  Singapore: '#1e3a8a',
-  'Hong Kong': '#f97316',
+  Thailand: '#2563eb',
+  Singapore: '#0f766e',
+  'Hong Kong': '#d97706',
 }
 
 function coordinate(value, min, max) {
@@ -22,14 +22,14 @@ export function RouteMap({ routes = [] }) {
     destLng: coordinate(route.destLng, -180, 180),
   })).filter((route) => route.originLat != null && route.originLng != null && route.destLat != null && route.destLng != null)
   return (
-    <div className="h-[380px] overflow-hidden rounded-2xl border border-slate-300">
+    <div className="h-[400px] overflow-hidden rounded-xl border border-slate-200">
       <MapContainer center={[13, 112]} zoom={4} scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {validRoutes.map((r, idx) => {
-          const color = countryColor[r.country] || '#0ea5e9'
+          const color = countryColor[r.country] || '#2563eb'
           const from = [r.originLat, r.originLng]
           const to = [r.destLat, r.destLng]
           return (
