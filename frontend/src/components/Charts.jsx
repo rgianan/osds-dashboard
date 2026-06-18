@@ -22,12 +22,13 @@ function label(row) {
 }
 
 export function Donut({ data, valueKey = 'totalInterns', nameKey = 'name' }) {
-  const total = data.reduce((sum, item) => sum + Number(item[valueKey] || 0), 0)
+  const safeData = Array.isArray(data) ? data : []
+  const total = safeData.reduce((sum, item) => sum + (Number.isFinite(Number(item[valueKey])) ? Number(item[valueKey]) : 0), 0)
   return (
     <ResponsiveContainer width="100%" height={280}>
       <PieChart>
-        <Pie data={data} dataKey={valueKey} nameKey={nameKey} innerRadius={64} outerRadius={96} paddingAngle={2} label={(p) => `${n(p.value)} (${total ? ((p.value / total) * 100).toFixed(2) : '0'}%)`}>
-          {data.map((_, idx) => <Cell key={idx} fill={PALETTE[idx % PALETTE.length]} />)}
+        <Pie data={safeData} dataKey={valueKey} nameKey={nameKey} innerRadius={64} outerRadius={96} paddingAngle={2} label={(p) => `${n(p.value)} (${total ? ((p.value / total) * 100).toFixed(2) : '0'}%)`}>
+          {safeData.map((item, idx) => <Cell key={`${item[nameKey] || 'slice'}-${idx}`} fill={PALETTE[idx % PALETTE.length]} />)}
         </Pie>
         <Tooltip formatter={(v) => n(v)} />
         <Legend layout="vertical" align="right" verticalAlign="middle" />
@@ -37,9 +38,10 @@ export function Donut({ data, valueKey = 'totalInterns', nameKey = 'name' }) {
 }
 
 export function HorizontalBars({ data, valueKey = 'totalInterns', height = 320 }) {
+  const safeData = Array.isArray(data) ? data : []
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} layout="vertical" margin={{ top: 10, right: 24, left: 12, bottom: 10 }}>
+      <BarChart data={safeData} layout="vertical" margin={{ top: 10, right: 24, left: 12, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" tickFormatter={compact} />
         <YAxis type="category" dataKey={label} width={190} tick={{ fontSize: 11 }} />
@@ -51,9 +53,10 @@ export function HorizontalBars({ data, valueKey = 'totalInterns', height = 320 }
 }
 
 export function MonthLine({ data }) {
+  const safeData = Array.isArray(data) ? data : []
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data} margin={{ top: 16, right: 24, left: 0, bottom: 10 }}>
+      <LineChart data={safeData} margin={{ top: 16, right: 24, left: 0, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="yearMonth" tick={{ fontSize: 11 }} />
         <YAxis allowDecimals={false} />
@@ -67,9 +70,10 @@ export function MonthLine({ data }) {
 }
 
 export function EndorsementMonths({ data }) {
+  const safeData = Array.isArray(data) ? data : []
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 16, right: 24, left: 0, bottom: 10 }}>
+      <BarChart data={safeData} margin={{ top: 16, right: 24, left: 0, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="yearMonth" tick={{ fontSize: 11 }} />
         <YAxis allowDecimals={false} />
@@ -81,15 +85,17 @@ export function EndorsementMonths({ data }) {
 }
 
 export function StackedHeiCountryBars({ data, countries }) {
+  const safeData = Array.isArray(data) ? data : []
+  const activeCountries = (Array.isArray(countries) ? countries : []).filter((country) => safeData.some((row) => Number(row[country]) > 0))
   return (
     <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={data} layout="vertical" stackOffset="expand" margin={{ top: 10, right: 24, left: 12, bottom: 10 }}>
+      <BarChart data={safeData} layout="vertical" stackOffset="expand" margin={{ top: 10, right: 24, left: 12, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" tickFormatter={(v) => `${Math.round(v * 100)}%`} />
         <YAxis type="category" dataKey="name" width={190} tick={{ fontSize: 11 }} />
         <Tooltip formatter={(v) => n(v)} />
         <Legend />
-        {countries.map((c, idx) => <Bar key={c} dataKey={c} stackId="a" fill={PALETTE[idx % PALETTE.length]} />)}
+        {activeCountries.map((c, idx) => <Bar key={c} dataKey={c} stackId="a" fill={PALETTE[idx % PALETTE.length]} />)}
       </BarChart>
     </ResponsiveContainer>
   )

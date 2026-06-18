@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle, BarChart3, Globe2, GraduationCap, RefreshCw, TimerReset } from 'lucide-react'
 import { postJson } from './lib/api.js'
 import { n } from './lib/format.js'
@@ -6,7 +6,7 @@ import { Donut, EndorsementMonths, HorizontalBars, MonthLine, StackedHeiCountryB
 import { KpiCard, Panel } from './components/Panel.jsx'
 import { RouteMap } from './components/RouteMap.jsx'
 
-const DEFAULT_FILTERS = { year: '2026', country: '', region: '', sex: '', quarter: '' }
+const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
   { id: 'overview', label: 'Executive Overview', icon: BarChart3 },
   { id: 'timeline', label: 'Timeline + Forecast', icon: TimerReset },
@@ -43,7 +43,7 @@ function Header({ tab, lastUpdatedAt, onRefresh, loading }) {
           <p className="mt-1 text-xs text-slate-500">Last loaded: {lastUpdatedAt || '—'}</p>
         </div>
       </div>
-      <button onClick={onRefresh} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow hover:bg-slate-800 disabled:opacity-60">
+      <button type="button" onClick={onRefresh} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow hover:bg-slate-800 disabled:opacity-60">
         <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Refresh
       </button>
     </header>
@@ -159,31 +159,35 @@ export default function App() {
   const [data, setData] = useState({ options: {}, overview: {}, timeline: {}, hei: {}, geography: {} })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [refreshVersion, setRefreshVersion] = useState(0)
 
   const cy = filters.year || 'All Years'
 
-  async function loadDashboard(nextFilters = filters) {
+  useEffect(() => {
+    let isCurrent = true
     setLoading(true)
     setError('')
-    try {
-      const res = await postJson({ action: 'dashboardData', filters: nextFilters })
-      setData(res)
-    } catch (err) {
-      setError(err?.message || 'Unable to load dashboard.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  useEffect(() => { loadDashboard(DEFAULT_FILTERS) }, [])
-  useEffect(() => { loadDashboard(filters) }, [filters.year, filters.country, filters.region, filters.sex, filters.quarter])
+    postJson({ action: 'dashboardData', filters })
+      .then((res) => {
+        if (isCurrent) setData(res)
+      })
+      .catch((err) => {
+        if (isCurrent) setError(err?.message || 'Unable to load dashboard.')
+      })
+      .finally(() => {
+        if (isCurrent) setLoading(false)
+      })
+
+    return () => { isCurrent = false }
+  }, [filters.year, filters.country, filters.region, filters.sex, filters.quarter, refreshVersion])
 
   const options = data.options || {}
   const titleSuffix = cy && cy !== 'All Years' ? `- CY ${cy}` : ''
 
   return (
     <main className="min-h-screen bg-slate-300 text-slate-900">
-      <Header tab={tab} lastUpdatedAt={data.lastUpdatedAt} loading={loading} onRefresh={() => loadDashboard(filters)} />
+      <Header tab={tab} lastUpdatedAt={data.lastUpdatedAt} loading={loading} onRefresh={() => setRefreshVersion((version) => version + 1)} />
       <div className="grid gap-4 px-3 pb-6 lg:grid-cols-[160px_1fr]">
         <aside className="h-fit overflow-hidden rounded-sm border-2 border-slate-900 bg-slate-200 shadow-panel">
           <Select label="Year" value={filters.year} options={options.years || []} onChange={(v) => setFilters((f) => ({ ...f, year: v }))} allLabel="All" />
@@ -192,11 +196,11 @@ export default function App() {
           <Select label="Region" value={filters.region} options={options.regions || []} onChange={(v) => setFilters((f) => ({ ...f, region: v }))} allLabel="All" />
           <Select label="Sex" value={filters.sex} options={options.sexes || []} onChange={(v) => setFilters((f) => ({ ...f, sex: v }))} allLabel="All" />
         </aside>
-        <section>
+        <section aria-busy={loading}>
           <div className="mb-4 flex flex-wrap gap-2">
             {TABS.map((item) => {
               const Icon = item.icon
-              return <button key={item.id} onClick={() => setTab(item.id)} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-black shadow-sm ${tab === item.id ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}><Icon size={16} /> {item.label}</button>
+               return <button type="button" key={item.id} aria-pressed={tab === item.id} onClick={() => setTab(item.id)} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-black shadow-sm ${tab === item.id ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'}`}><Icon size={16} /> {item.label}</button>
             })}
           </div>
           {error ? <div className="mb-4 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800"><AlertTriangle /> <span>{error}</span></div> : null}

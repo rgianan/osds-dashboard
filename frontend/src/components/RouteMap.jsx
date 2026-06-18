@@ -7,8 +7,20 @@ const countryColor = {
   'Hong Kong': '#f97316',
 }
 
+function coordinate(value, min, max) {
+  if (value === '' || value == null) return null
+  const number = Number(value)
+  return Number.isFinite(number) && number >= min && number <= max ? number : null
+}
+
 export function RouteMap({ routes = [] }) {
-  const validRoutes = routes.filter((r) => Number.isFinite(Number(r.originLat)) && Number.isFinite(Number(r.originLng)) && Number.isFinite(Number(r.destLat)) && Number.isFinite(Number(r.destLng)))
+  const validRoutes = (Array.isArray(routes) ? routes : []).map((route) => ({
+    ...route,
+    originLat: coordinate(route.originLat, -90, 90),
+    originLng: coordinate(route.originLng, -180, 180),
+    destLat: coordinate(route.destLat, -90, 90),
+    destLng: coordinate(route.destLng, -180, 180),
+  })).filter((route) => route.originLat != null && route.originLng != null && route.destLat != null && route.destLng != null)
   return (
     <div className="h-[380px] overflow-hidden rounded-2xl border border-slate-300">
       <MapContainer center={[13, 112]} zoom={4} scrollWheelZoom={false}>
@@ -18,8 +30,8 @@ export function RouteMap({ routes = [] }) {
         />
         {validRoutes.map((r, idx) => {
           const color = countryColor[r.country] || '#0ea5e9'
-          const from = [Number(r.originLat), Number(r.originLng)]
-          const to = [Number(r.destLat), Number(r.destLng)]
+          const from = [r.originLat, r.originLng]
+          const to = [r.destLat, r.destLng]
           return (
             <React.Fragment key={`${r.key}-${idx}`}>
               <Polyline positions={[from, to]} color={color} weight={Math.max(1, Math.min(8, Math.sqrt(Number(r.totalInterns || 1))))} opacity={0.6} />
