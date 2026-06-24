@@ -1,0 +1,13 @@
+# Firebase CLI and local emulators
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+.firebaserc
+
+# Local function configuration and credentials
+firebase/functions/.env
+firebase/functions/.env.*
+!firebase/functions/.env.example
+*service-account*.json
+

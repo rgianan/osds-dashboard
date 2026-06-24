@@ -1,0 +1,28 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "interns",
+      "fieldPath": "filterKeys",
+      "indexes": [
+        { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION" }
+      ]
+    },
+    { "collectionGroup": "interns", "fieldPath": "program", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "host", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "hei", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "typeOfHei", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "endorsementDate", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "startDate", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "endDate", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "pathKey", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "pathId", "indexes": [] },
+    { "collectionGroup": "interns", "fieldPath": "odKey", "indexes": [] },
+    {
+      "collectionGroup": "cache",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
+}

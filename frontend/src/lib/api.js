@@ -1,11 +1,13 @@
-export const API_URL = import.meta.env.VITE_GAS_WEB_APP_URL || ''
+export const FIREBASE_API_URL = import.meta.env.VITE_FIREBASE_API_URL || ''
+export const GAS_API_URL = import.meta.env.VITE_GAS_WEB_APP_URL || ''
+export const API_URL = FIREBASE_API_URL || GAS_API_URL
 export const DASHBOARD_TOKEN = import.meta.env.VITE_DASHBOARD_TOKEN || ''
 
 const inFlightRequests = new Map()
 
 function configurationError() {
-  if (!API_URL) return 'Missing VITE_GAS_WEB_APP_URL. Set it in Netlify environment variables or .env.local.'
-  if (/YOUR_DEPLOYMENT_ID/i.test(API_URL)) return 'VITE_GAS_WEB_APP_URL still contains the example deployment ID. Replace it with the deployed Google Apps Script /exec URL.'
+  if (!API_URL) return 'Missing backend URL. Set VITE_FIREBASE_API_URL or VITE_GAS_WEB_APP_URL in Netlify or .env.local.'
+  if (!FIREBASE_API_URL && /YOUR_DEPLOYMENT_ID/i.test(API_URL)) return 'VITE_GAS_WEB_APP_URL still contains the example deployment ID. Replace it with the deployed Google Apps Script /exec URL.'
   return ''
 }
 
@@ -25,7 +27,7 @@ export async function postJson(payload) {
         body,
       })
     } catch {
-      throw new Error('Could not reach the dashboard backend. Verify the Apps Script deployment URL, access settings, and network connection.')
+      throw new Error('Could not reach the dashboard backend. Verify the configured Firebase or Apps Script URL, allowed origin, and network connection.')
     }
 
     if (!res.ok) throw new Error(`Dashboard request failed with HTTP ${res.status}.`)

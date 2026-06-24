@@ -15,6 +15,7 @@ import {
   RefreshCw,
   RotateCcw,
   TimerReset,
+  UploadCloud,
   Users,
   X,
 } from 'lucide-react'
@@ -29,6 +30,7 @@ const HorizontalBars = lazy(() => loadCharts().then((module) => ({ default: modu
 const MonthLine = lazy(() => loadCharts().then((module) => ({ default: module.MonthLine })))
 const StackedHeiCountryBars = lazy(() => loadCharts().then((module) => ({ default: module.StackedHeiCountryBars })))
 const RouteMap = lazy(() => import('./components/RouteMap.jsx').then((module) => ({ default: module.RouteMap })))
+const DataImport = lazy(() => import('./components/DataImport.jsx'))
 
 const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
@@ -36,8 +38,9 @@ const TABS = [
   { id: 'timeline', label: 'Timeline', title: 'Internship timeline', description: 'Upcoming completions and monthly internship movement.', icon: TimerReset },
   { id: 'hei', label: 'HEI risk', title: 'HEI concentration risk', description: 'Institution participation, destination mix, and concentration indicators.', icon: GraduationCap },
   { id: 'geo', label: 'Geography', title: 'Destinations and host organizations', description: 'Where interns go and which organizations receive them.', icon: Globe2 },
+  { id: 'admin', label: 'Data import', title: 'Dataset administration', description: 'Validate and activate a new SIAP dataset from a protected CSV upload.', icon: UploadCloud },
 ]
-const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography' }
+const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography', admin: null }
 const EMPTY_DASHBOARD = { overview: null, timeline: null, hei: null, geography: null }
 const FILTER_LABELS = { year: 'Year', quarter: 'Quarter', country: 'Country', region: 'Region', sex: 'Sex' }
 
@@ -97,7 +100,7 @@ function Select({ id, label, value, options, onChange, allLabel = 'All' }) {
   )
 }
 
-function Header({ tab, lastUpdatedAt, onRefresh, loading, onTabChange }) {
+function Header({ tab, lastUpdatedAt, onRefresh, loading, onTabChange, showRefresh }) {
   function handleTabKeyDown(event, index) {
     const keyTargets = {
       ArrowRight: (index + 1) % TABS.length,
@@ -127,7 +130,7 @@ function Header({ tab, lastUpdatedAt, onRefresh, loading, onTabChange }) {
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Last synchronized</p>
               <p className="truncate text-xs font-medium text-slate-600">{lastUpdatedAt || 'Waiting for data'}</p>
             </div>
-            <button
+            {showRefresh ? <button
               type="button"
               onClick={onRefresh}
               disabled={loading}
@@ -136,7 +139,7 @@ function Header({ tab, lastUpdatedAt, onRefresh, loading, onTabChange }) {
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
               <span>Refresh</span>
-            </button>
+            </button> : null}
           </div>
         </div>
 
@@ -231,7 +234,7 @@ function SectionIntro({ tab, filters }) {
         <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{item.title}</h2>
         <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{item.description}</p>
       </div>
-      <p className="text-xs font-medium text-slate-500">{activeFilters ? `View refined by ${activeFilters} filter${activeFilters === 1 ? '' : 's'}` : 'All records included'}</p>
+      <p className="text-xs font-medium text-slate-500">{tab === 'admin' ? 'Administrator-only workflow' : activeFilters ? `View refined by ${activeFilters} filter${activeFilters === 1 ? '' : 's'}` : 'All records included'}</p>
     </div>
   )
 }
@@ -501,9 +504,14 @@ export default function App() {
   const section = SECTION_BY_TAB[tab]
   const sectionData = dataByFilter[filterKey] || EMPTY_DASHBOARD
   const data = useMemo(() => ({ ...EMPTY_DASHBOARD, ...sectionData, options }), [sectionData, options])
-  const loading = filtersPending || requestLoading
+  const loading = section ? filtersPending || requestLoading : false
 
   useEffect(() => {
+    if (!section) {
+      setRequestLoading(false)
+      setError('')
+      return undefined
+    }
     if (filtersPending) {
       setRequestLoading(false)
       setError('')
@@ -547,6 +555,7 @@ export default function App() {
   }, [filterKey, filtersPending, section, refreshVersion])
 
   function refreshActiveSection() {
+    if (!section) return
     setDataByFilter((current) => ({
       ...current,
       [filterKey]: { ...(current[filterKey] || EMPTY_DASHBOARD), [section]: null },
@@ -558,22 +567,22 @@ export default function App() {
     setFilters((current) => ({ ...current, [key]: value }))
   }
 
-  const showSkeleton = loading && (filtersPending || !data[section])
+  const showSkeleton = Boolean(section) && loading && (filtersPending || !data[section])
 
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
       <a href="#dashboard-content" className="sr-only z-50 rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
-      <Header tab={tab} lastUpdatedAt={lastUpdatedAt} loading={loading} onRefresh={refreshActiveSection} onTabChange={setTab} />
+      <Header tab={tab} lastUpdatedAt={lastUpdatedAt} loading={loading} onRefresh={refreshActiveSection} onTabChange={setTab} showRefresh={Boolean(section)} />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:py-7 lg:px-8">
-        <FilterBar
+        {section ? <FilterBar
           filters={filters}
           options={options}
           onChange={updateFilter}
           onClear={() => setFilters(DEFAULT_FILTERS)}
           open={filtersOpen}
           onToggle={() => setFiltersOpen((current) => !current)}
-        />
+        /> : null}
 
         <section className="mt-7" aria-busy={loading} aria-labelledby={`tab-${tab}`}>
           <SectionIntro tab={tab} filters={filters} />
@@ -601,7 +610,8 @@ export default function App() {
             {!filtersPending && data[section] && tab === 'timeline' ? <Timeline data={data} /> : null}
             {!filtersPending && data[section] && tab === 'hei' ? <HeiRisk data={data} /> : null}
             {!filtersPending && data[section] && tab === 'geo' ? <Geography data={data} /> : null}
-            {!loading && !error && !data[section] ? <EmptyState title="This section is not available" message="Refresh the dashboard or adjust the current filters." /> : null}
+            {tab === 'admin' ? <Suspense fallback={<div className="skeleton h-80 rounded-2xl" />}><DataImport /></Suspense> : null}
+            {section && !loading && !error && !data[section] ? <EmptyState title="This section is not available" message="Refresh the dashboard or adjust the current filters." /> : null}
           </div>
         </section>
       </main>

@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /csv-imports/{userId}/{fileName} {
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.admin == true
+        && fileName.matches('.*\\.csv')
+        && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType.matches('text/csv|application/csv|application/vnd.ms-excel|text/plain');
+      allow read, update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

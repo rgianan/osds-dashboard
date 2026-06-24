@@ -7,6 +7,7 @@
  * - STOPS_SHEET_NAME        optional; defaults to "Stops"
  * - DASHBOARD_TOKEN         optional; weak access gate only. Do not treat it as secret in Netlify.
  * - CACHE_SECONDS           optional; defaults to 600
+ * - DASHBOARD_CACHE_VERSION optional; changed automatically by clearDashboardCache()
  *
  * Web app deployment: Execute as Me, Who has access: Anyone with the link.
  * The backend returns aggregates only. It must not expose intern names or other row-level PII.
@@ -15,6 +16,8 @@
 var DEFAULT_TZ = 'Asia/Singapore';
 var DEFAULT_CACHE_SECONDS = 600;
 var WORK_HOURS_PER_DAY = 8;
+var ROW_CACHE_PREFIX = 'siap-rows:v1';
+var ROW_CACHE_CHUNK_SIZE = 80000;
 
 var COL = {
   endorsementNo: 'SIAP ENDORSEMENT No',
@@ -48,25 +51,28 @@ function doGet() {
 function doPost(e) {
   try {
     var payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    verifyToken_(payload.dashboardToken || '');
+    var props = PropertiesService.getScriptProperties();
+    verifyToken_(payload.dashboardToken || '', props);
     var action = String(payload.action || '').trim();
-    if (action === 'dashboardData') return dashboardData_(payload.filters || {}, payload.section || 'overview', payload.includeOptions === true);
+    if (action === 'dashboardData') return dashboardData_(payload.filters || {}, payload.section || 'overview', payload.includeOptions === true, props);
     throw new Error('Unsupported action.');
   } catch (err) {
     return json_({ ok: false, message: errorMessage_(err) });
   }
 }
 
-function dashboardData_(filters, section, includeOptions) {
+function dashboardData_(filters, section, includeOptions, props) {
+  var startedAt = Date.now();
   filters = normalizeFilters_(filters || {});
   section = normalizeSection_(section);
+  var config = getConfig_(props);
+  var cacheSeconds = getCacheSeconds_(config);
   var cache = CacheService.getScriptCache();
-  var cacheKey = 'dashboard:v2:' + section + ':' + (includeOptions ? 'options:' : '') + Utilities.base64EncodeWebSafe(JSON.stringify(filters)).slice(0, 180);
-  var cached = cache.get(cacheKey);
+  var cacheKey = 'dashboard:v3:' + config.cacheVersion + ':' + section + ':' + (includeOptions ? 'options:' : '') + Utilities.base64EncodeWebSafe(JSON.stringify(filters)).slice(0, 160);
+  var cached = cacheSeconds ? cache.get(cacheKey) : null;
   if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
 
-  var needsDurations = section === 'overview' || section === 'timeline';
-  var rawRows = getSiapRows_(needsDurations);
+  var rawRows = getSiapRows_(config, cache, cacheSeconds);
   var filtered = rawRows.filter(function(row) { return passesFilters_(row, filters); });
 
   var response = {
@@ -84,20 +90,22 @@ function dashboardData_(filters, section, includeOptions) {
     response.hei = buildHeiRisk_(filtered, countries);
   }
   if (section === 'geography') response.geography = buildGeography_(filtered);
+  response.serverElapsedMs = Date.now() - startedAt;
 
   var body = JSON.stringify(response);
-  cache.put(cacheKey, body, getCacheSeconds_());
+  if (cacheSeconds) cache.put(cacheKey, body, cacheSeconds);
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
 }
 
-function getConfig_() {
-  var props = PropertiesService.getScriptProperties();
+function getConfig_(props) {
+  props = props || PropertiesService.getScriptProperties();
   return {
     spreadsheetId: requiredProp_(props, 'SPREADSHEET_ID'),
     siapSheetName: props.getProperty('SIAP_SHEET_NAME') || 'SIAP Data',
     stopsSheetName: props.getProperty('STOPS_SHEET_NAME') || 'Stops',
     token: props.getProperty('DASHBOARD_TOKEN') || '',
-    cacheSeconds: Number(props.getProperty('CACHE_SECONDS') || DEFAULT_CACHE_SECONDS)
+    cacheSeconds: Number(props.getProperty('CACHE_SECONDS') || DEFAULT_CACHE_SECONDS),
+    cacheVersion: props.getProperty('DASHBOARD_CACHE_VERSION') || '1'
   };
 }
 
@@ -107,24 +115,47 @@ function requiredProp_(props, key) {
   return value;
 }
 
-function getCacheSeconds_() {
-  var n = getConfig_().cacheSeconds;
+function getCacheSeconds_(config) {
+  var n = config.cacheSeconds;
   if (!isFinite(n) || n < 0) return DEFAULT_CACHE_SECONDS;
   return Math.min(21600, Math.floor(n));
 }
 
-function verifyToken_(token) {
-  var expected = getConfig_().token;
+function verifyToken_(token, props) {
+  var expected = (props || PropertiesService.getScriptProperties()).getProperty('DASHBOARD_TOKEN') || '';
   if (!expected) return;
   if (String(token || '') !== expected) throw new Error('Unauthorized dashboard request.');
 }
 
-function getSiapRows_(includeDurations) {
-  var config = getConfig_();
+function getSiapRows_(config, cache, cacheSeconds) {
+  if (!cacheSeconds) return readSiapRowsFromSheet_(config);
+
+  var cached = readCachedRows_(cache, config);
+  if (cached) return cached;
+
+  var lock = LockService.getScriptLock();
+  var locked = lock.tryLock(5000);
+  try {
+    if (locked) {
+      cached = readCachedRows_(cache, config);
+      if (cached) return cached;
+    }
+    var rows = readSiapRowsFromSheet_(config);
+    try { writeCachedRows_(cache, config, rows, cacheSeconds); } catch (cacheError) { /* Cache is an optimization only. */ }
+    return rows;
+  } finally {
+    if (locked) lock.releaseLock();
+  }
+}
+
+function readSiapRowsFromSheet_(config) {
   var ss = SpreadsheetApp.openById(config.spreadsheetId);
   var sheet = ss.getSheetByName(config.siapSheetName);
   if (!sheet) throw new Error('Sheet not found: ' + config.siapSheetName);
-  var values = sheet.getDataRange().getValues();
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+  if (lastRow < 2 || lastColumn < 1) return [];
+  var values = sheet.getRange(1, 1, lastRow, lastColumn).getValues();
   if (values.length < 2) return [];
   var headers = values[0].map(function(h) { return String(h || '').trim(); });
   var index = {};
@@ -138,6 +169,9 @@ function getSiapRows_(includeDurations) {
     var endorsementDate = toDate_(valueAt_(row, index, COL.endorsementDate));
     var startDate = toDate_(valueAt_(row, index, COL.startDate));
     var endDate = toDate_(valueAt_(row, index, COL.endDate));
+    var referenceDate = endorsementDate || startDate || endDate;
+    var startDayMs = startDate ? startOfDay_(startDate).getTime() : null;
+    var endDayMs = endDate ? startOfDay_(endDate).getTime() : null;
     var item = {
       endorsementNo: clean_(valueAt_(row, index, COL.endorsementNo)),
       region: clean_(valueAt_(row, index, COL.region)),
@@ -158,12 +192,67 @@ function getSiapRows_(includeDurations) {
       destLng: toNumber_(valueAt_(row, index, COL.destLng)),
       pathKey: clean_(valueAt_(row, index, COL.pathKey)),
       pathId: clean_(valueAt_(row, index, COL.pathId)),
-      odKey: clean_(valueAt_(row, index, COL.odKey))
+      odKey: clean_(valueAt_(row, index, COL.odKey)),
+      filterYear: yearOf_(referenceDate),
+      filterQuarter: quarterOf_(referenceDate),
+      endorsementYearMonth: ym_(endorsementDate),
+      startYearMonth: startDate ? ym_(startDate) : '',
+      endYearMonth: endDate ? ym_(endDate) : '',
+      startDayMs: startDayMs,
+      endDayMs: endDayMs,
+      leadTimeDays: endorsementDate && startDate ? daysBetween_(endorsementDate, startDate) : null,
+      durationWorkHours: durationWorkHoursFromDates_(startDate, endDate)
     };
-    if (includeDurations) item.durationWorkHours = durationWorkHoursFromDates_(startDate, endDate);
     rows.push(item);
   }
   return rows;
+}
+
+function rowCacheKey_(config) {
+  return ROW_CACHE_PREFIX + ':' + config.cacheVersion;
+}
+
+function readCachedRows_(cache, config) {
+  try {
+    var prefix = rowCacheKey_(config);
+    var metaText = cache.get(prefix + ':meta');
+    if (!metaText) return null;
+    var meta = JSON.parse(metaText);
+    if (!meta.chunkCount) return null;
+    var keys = [];
+    for (var i = 0; i < meta.chunkCount; i++) keys.push(prefix + ':' + i);
+    var chunks = cache.getAll(keys);
+    var encoded = '';
+    for (var c = 0; c < keys.length; c++) {
+      if (!chunks[keys[c]]) return null;
+      encoded += chunks[keys[c]];
+    }
+    var compressed = Utilities.newBlob(Utilities.base64Decode(encoded));
+    var json = Utilities.ungzip(compressed).getDataAsString('UTF-8');
+    var rows = JSON.parse(json);
+    rows.forEach(reviveCachedRow_);
+    return rows;
+  } catch (err) {
+    return null;
+  }
+}
+
+function writeCachedRows_(cache, config, rows, cacheSeconds) {
+  var prefix = rowCacheKey_(config);
+  var json = JSON.stringify(rows);
+  var compressed = Utilities.gzip(Utilities.newBlob(json));
+  var encoded = Utilities.base64Encode(compressed.getBytes());
+  var chunks = {};
+  var chunkCount = Math.ceil(encoded.length / ROW_CACHE_CHUNK_SIZE);
+  for (var i = 0; i < chunkCount; i++) chunks[prefix + ':' + i] = encoded.slice(i * ROW_CACHE_CHUNK_SIZE, (i + 1) * ROW_CACHE_CHUNK_SIZE);
+  cache.putAll(chunks, cacheSeconds);
+  cache.put(prefix + ':meta', JSON.stringify({ chunkCount: chunkCount, rowCount: rows.length }), cacheSeconds);
+}
+
+function reviveCachedRow_(row) {
+  row.endorsementDate = row.endorsementDate ? new Date(row.endorsementDate) : null;
+  row.startDate = row.startDate ? new Date(row.startDate) : null;
+  row.endDate = row.endDate ? new Date(row.endDate) : null;
 }
 
 function valueAt_(row, index, col) {
@@ -214,9 +303,8 @@ function normalizeSection_(section) {
 }
 
 function passesFilters_(row, filters) {
-  var refDate = row.endorsementDate || row.startDate || row.endDate;
-  if (filters.year && String(yearOf_(refDate)) !== filters.year) return false;
-  if (filters.quarter && quarterOf_(refDate) !== filters.quarter) return false;
+  if (filters.year && row.filterYear !== filters.year) return false;
+  if (filters.quarter && row.filterQuarter !== filters.quarter) return false;
   if (filters.country && row.country !== filters.country) return false;
   if (filters.region && row.region !== filters.region) return false;
   if (filters.sex && row.sex !== filters.sex) return false;
@@ -243,7 +331,7 @@ function ym_(date) {
 
 function buildOptions_(rows) {
   return {
-    years: sortDesc_(unique_(rows.map(function(r) { return yearOf_(r.endorsementDate || r.startDate || r.endDate); })).filter(Boolean)),
+    years: sortDesc_(unique_(rows.map(function(r) { return r.filterYear; })).filter(Boolean)),
     countries: sortAsc_(unique_(rows.map(function(r) { return r.country; })).filter(Boolean)),
     regions: sortAsc_(unique_(rows.map(function(r) { return r.region; })).filter(Boolean)),
     sexes: sortAsc_(unique_(rows.map(function(r) { return r.sex; })).filter(Boolean))
@@ -268,9 +356,12 @@ function buildTimeline_(rows) {
   var now = startOfDay_(new Date());
   var next30 = addDays_(now, 30);
   var next60 = addDays_(now, 60);
+  var nowMs = now.getTime();
+  var next30Ms = next30.getTime();
+  var next60Ms = next60.getTime();
   return {
-    endingNext30Days: rows.filter(function(r) { return r.endDate && r.endDate >= now && r.endDate <= next30; }).length,
-    endingNext60Days: rows.filter(function(r) { return r.endDate && r.endDate >= now && r.endDate <= next60; }).length,
+    endingNext30Days: rows.filter(function(r) { return r.endDayMs != null && r.endDayMs >= nowMs && r.endDayMs <= next30Ms; }).length,
+    endingNext60Days: rows.filter(function(r) { return r.endDayMs != null && r.endDayMs >= nowMs && r.endDayMs <= next60Ms; }).length,
     countrySummary: groupCountrySummary_(rows),
     startsEndsByMonth: startsEndsByMonth_(rows)
   };
@@ -322,7 +413,7 @@ function groupEndorsements_(rows, key, limit) {
 function groupEndorsementsByMonth_(rows) {
   var map = {};
   rows.forEach(function(r) {
-    var key = ym_(r.endorsementDate);
+    var key = r.endorsementYearMonth;
     if (!map[key]) map[key] = { yearMonth: key, _ids: {}, totalEndorsements: 0 };
     if (r.endorsementNo) map[key]._ids[r.endorsementNo] = true;
   });
@@ -354,13 +445,13 @@ function groupCountrySummary_(rows) {
 function startsEndsByMonth_(rows) {
   var map = {};
   rows.forEach(function(r) {
-    if (r.startDate) {
-      var sKey = ym_(r.startDate);
+    if (r.startYearMonth) {
+      var sKey = r.startYearMonth;
       if (!map[sKey]) map[sKey] = { yearMonth: sKey, internStarts: 0, internEnds: 0 };
       map[sKey].internStarts += 1;
     }
-    if (r.endDate) {
-      var eKey = ym_(r.endDate);
+    if (r.endYearMonth) {
+      var eKey = r.endYearMonth;
       if (!map[eKey]) map[eKey] = { yearMonth: eKey, internStarts: 0, internEnds: 0 };
       map[eKey].internEnds += 1;
     }
@@ -460,15 +551,14 @@ function routeSummary_(rows) {
 }
 
 function activeInternships_(rows, today) {
-  var d = startOfDay_(today);
+  var dayMs = startOfDay_(today).getTime();
   return rows.filter(function(r) {
-    return r.startDate && r.endDate && startOfDay_(r.startDate) <= d && startOfDay_(r.endDate) >= d;
+    return r.startDayMs != null && r.endDayMs != null && r.startDayMs <= dayMs && r.endDayMs >= dayMs;
   }).length;
 }
 
 function leadTimeDays_(r) {
-  if (!r.endorsementDate || !r.startDate) return null;
-  return daysBetween_(r.endorsementDate, r.startDate);
+  return Object.prototype.hasOwnProperty.call(r, 'leadTimeDays') ? r.leadTimeDays : null;
 }
 
 function durationWorkHours_(r) {
@@ -562,5 +652,16 @@ function errorMessage_(err) {
 
 /** Optional utility after importing a fresh XLSX into Google Sheets. */
 function clearDashboardCache() {
-  CacheService.getScriptCache().removeAll(['dashboard:v1']);
+  var version = String(Date.now());
+  PropertiesService.getScriptProperties().setProperty('DASHBOARD_CACHE_VERSION', version);
+  return version;
+}
+
+/** Optional utility for a time-driven trigger or immediately after cache clearing. */
+function warmDashboardCache() {
+  var props = PropertiesService.getScriptProperties();
+  var config = getConfig_(props);
+  var cacheSeconds = getCacheSeconds_(config);
+  if (!cacheSeconds) return 0;
+  return getSiapRows_(config, CacheService.getScriptCache(), cacheSeconds).length;
 }
