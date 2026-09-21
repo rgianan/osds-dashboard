@@ -70,14 +70,14 @@ export function Donut({ data, valueKey = 'totalInterns', nameKey = 'name' }) {
   )
 }
 
-export function HorizontalBars({ data, valueKey = 'totalInterns', height = 320, color = '#2563eb' }) {
+export function HorizontalBars({ data, valueKey = 'totalInterns', height = 320, color = '#2563eb', labelWidth = 150, labelLimit = 24 }) {
   const safeData = Array.isArray(data) ? data : []
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={safeData} layout="vertical" margin={{ top: 6, right: 48, left: 0, bottom: 4 }} accessibilityLayer>
         <CartesianGrid stroke={GRID_COLOR} strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" tickFormatter={compact} tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey={label} width={150} tickFormatter={(value) => shortLabel(value)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey={label} width={labelWidth} tickFormatter={(value) => shortLabel(value, labelLimit)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip formatter={tooltipFormatter} contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#f8fafc' }} />
         <Bar dataKey={valueKey} radius={[0, 6, 6, 0]} fill={color} maxBarSize={26} isAnimationActive={!REDUCE_MOTION} animationDuration={450}>
           <LabelList dataKey={valueKey} position="right" formatter={(value) => n(value)} fill="#475569" fontSize={11} />

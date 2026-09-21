@@ -5,23 +5,19 @@ import {
   BarChart3,
   CalendarClock,
   CheckCircle2,
-  ChevronDown,
   Clock3,
   FileCheck2,
-  Filter,
   Globe2,
   GraduationCap,
   Lightbulb,
-  RefreshCw,
-  RotateCcw,
   TimerReset,
   UploadCloud,
   Users,
-  X,
 } from 'lucide-react'
 import { postJson } from './lib/api.js'
 import { n } from './lib/format.js'
 import { KpiCard, Panel } from './components/Panel.jsx'
+import { DASHBOARD_VIEWS, DefinitionNote, EmptyState, FilterBar, Header, Visualization } from './components/DashboardShell.jsx'
 
 const loadCharts = () => import('./components/Charts.jsx')
 const Donut = lazy(() => loadCharts().then((module) => ({ default: module.Donut })))
@@ -31,6 +27,7 @@ const MonthLine = lazy(() => loadCharts().then((module) => ({ default: module.Mo
 const StackedHeiCountryBars = lazy(() => loadCharts().then((module) => ({ default: module.StackedHeiCountryBars })))
 const RouteMap = lazy(() => import('./components/RouteMap.jsx').then((module) => ({ default: module.RouteMap })))
 const DataImport = lazy(() => import('./components/DataImport.jsx'))
+const ForeignStudentsDashboard = lazy(() => import('./components/ForeignStudentsDashboard.jsx'))
 
 const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
@@ -42,7 +39,6 @@ const TABS = [
 ]
 const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography', admin: null }
 const EMPTY_DASHBOARD = { overview: null, timeline: null, hei: null, geography: null }
-const FILTER_LABELS = { year: 'Year', quarter: 'Quarter', country: 'Country', region: 'Region', sex: 'Sex' }
 
 function useDebouncedFilters(filters, delay = 300) {
   const [debounced, setDebounced] = useState(filters)
@@ -53,175 +49,6 @@ function useDebouncedFilters(filters, delay = 300) {
   }, [filters.year, filters.country, filters.region, filters.sex, filters.quarter, delay])
 
   return debounced
-}
-
-function EmptyState({ title = 'No data for this view', message = 'Try broadening or clearing the selected filters.', compact = false }) {
-  return (
-    <div className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center ${compact ? 'min-h-40 py-6' : 'min-h-64 py-10'}`}>
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200">
-        <BarChart3 size={19} aria-hidden="true" />
-      </div>
-      <p className="mt-3 text-sm font-semibold text-slate-700">{title}</p>
-      <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">{message}</p>
-    </div>
-  )
-}
-
-function Visualization({ children, data, height = 280, label, emptyTitle }) {
-  const hasData = Array.isArray(data) ? data.length > 0 : Boolean(data)
-  if (!hasData) return <EmptyState title={emptyTitle} compact />
-
-  return (
-    <div role="img" aria-label={label}>
-      <Suspense fallback={<div className="skeleton flex items-center justify-center rounded-xl text-sm font-medium text-slate-500" style={{ height }}>Loading visualization...</div>}>
-        {children}
-      </Suspense>
-    </div>
-  )
-}
-
-function Select({ id, label, value, options, onChange, allLabel = 'All' }) {
-  return (
-    <label htmlFor={id} className="min-w-0">
-      <span className="mb-1.5 block text-xs font-semibold text-slate-600">{label}</span>
-      <span className="relative block">
-        <select
-          id={id}
-          className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-          value={value || ''}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">{allLabel}</option>
-          {(options || []).map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-      </span>
-    </label>
-  )
-}
-
-function Header({ tab, lastUpdatedAt, onRefresh, loading, onTabChange, showRefresh }) {
-  function handleTabKeyDown(event, index) {
-    const keyTargets = {
-      ArrowRight: (index + 1) % TABS.length,
-      ArrowLeft: (index - 1 + TABS.length) % TABS.length,
-      Home: 0,
-      End: TABS.length - 1,
-    }
-    const nextIndex = keyTargets[event.key]
-    if (nextIndex == null) return
-    event.preventDefault()
-    document.getElementById(`tab-${TABS[nextIndex].id}`)?.focus()
-  }
-
-  return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto max-w-[1600px] px-4 pt-5 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#102a43] text-[11px] font-black tracking-wide text-white shadow-sm">SIAP</div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">Commission on Higher Education</p>
-              <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">SIAP Analytics</h1>
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
-            <div className="min-w-0 text-left sm:text-right" aria-live="polite">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Last synchronized</p>
-              <p className="truncate text-xs font-medium text-slate-600">{lastUpdatedAt || 'Waiting for data'}</p>
-            </div>
-            {showRefresh ? <button
-              type="button"
-              onClick={onRefresh}
-              disabled={loading}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#102a43] px-3.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#183b56] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
-              aria-label="Refresh the active dashboard section"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-              <span>Refresh</span>
-            </button> : null}
-          </div>
-        </div>
-
-        <nav className="mt-5 -mb-px overflow-x-auto" aria-label="Dashboard sections">
-          <div className="flex min-w-max gap-1" role="tablist">
-            {TABS.map((item, index) => {
-              const Icon = item.icon
-              const active = tab === item.id
-              return (
-                <button
-                  type="button"
-                  key={item.id}
-                  id={`tab-${item.id}`}
-                  role="tab"
-                  aria-selected={active}
-                  aria-controls={`panel-${item.id}`}
-                  tabIndex={active ? 0 : -1}
-                  onClick={() => onTabChange(item.id)}
-                  onKeyDown={(event) => handleTabKeyDown(event, index)}
-                  className={`inline-flex min-h-11 items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${active ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'}`}
-                >
-                  <Icon size={16} aria-hidden="true" /> {item.label}
-                </button>
-              )
-            })}
-          </div>
-        </nav>
-      </div>
-    </header>
-  )
-}
-
-function FilterBar({ filters, options, onChange, onClear, open, onToggle }) {
-  const activeFilters = Object.entries(filters).filter(([, value]) => value)
-
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]" aria-labelledby="filters-title">
-      <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-5">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Filter size={16} aria-hidden="true" /></span>
-          <div>
-            <h2 id="filters-title" className="text-sm font-semibold text-slate-900">Filter dashboard</h2>
-            <p className="text-xs text-slate-500">{activeFilters.length ? `${activeFilters.length} active filter${activeFilters.length === 1 ? '' : 's'}` : 'Showing all available records'}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {activeFilters.length ? (
-            <button type="button" onClick={onClear} className="hidden min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:inline-flex">
-              <RotateCcw size={14} aria-hidden="true" /> Clear all
-            </button>
-          ) : null}
-          <button type="button" onClick={onToggle} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden" aria-expanded={open} aria-controls="dashboard-filters">
-            {open ? 'Hide' : 'Filters'} <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
-      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block`}>
-        <fieldset>
-          <legend className="sr-only">Dashboard filters</legend>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Select id="filter-year" label="Year" value={filters.year} options={options.years || []} onChange={(value) => onChange('year', value)} />
-            <Select id="filter-quarter" label="Quarter" value={filters.quarter} options={['Q1', 'Q2', 'Q3', 'Q4']} onChange={(value) => onChange('quarter', value)} />
-            <Select id="filter-country" label="Country" value={filters.country} options={options.countries || []} onChange={(value) => onChange('country', value)} />
-            <Select id="filter-region" label="Region" value={filters.region} options={options.regions || []} onChange={(value) => onChange('region', value)} />
-            <Select id="filter-sex" label="Sex" value={filters.sex} options={options.sexes || []} onChange={(value) => onChange('sex', value)} />
-          </div>
-        </fieldset>
-
-        {activeFilters.length ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Active filters">
-            {activeFilters.map(([key, value]) => (
-              <button key={key} type="button" onClick={() => onChange(key, '')} className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Remove ${FILTER_LABELS[key]} filter ${value}`}>
-                <span className="text-blue-500">{FILTER_LABELS[key]}:</span> {value} <X size={13} aria-hidden="true" />
-              </button>
-            ))}
-            <button type="button" onClick={onClear} className="min-h-8 rounded-full px-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 sm:hidden">Clear all</button>
-          </div>
-        ) : null}
-      </div>
-    </section>
-  )
 }
 
 function SectionIntro({ tab, filters }) {
@@ -265,10 +92,6 @@ function InsightSummary({ items }) {
       </div>
     </section>
   )
-}
-
-function DefinitionNote({ children }) {
-  return <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">{children}</p>
 }
 
 function DataTable({ rows, columns, caption }) {
@@ -486,7 +309,7 @@ function DashboardSkeleton() {
   )
 }
 
-export default function App() {
+function SiapDashboard() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [tab, setTab] = useState('overview')
@@ -568,16 +391,33 @@ export default function App() {
   }
 
   const showSkeleton = Boolean(section) && loading && (filtersPending || !data[section])
+  const filterFields = [
+    { key: 'year', label: 'Year', options: options.years || [] },
+    { key: 'quarter', label: 'Quarter', options: ['Q1', 'Q2', 'Q3', 'Q4'] },
+    { key: 'country', label: 'Country', options: options.countries || [] },
+    { key: 'region', label: 'Region', options: options.regions || [] },
+    { key: 'sex', label: 'Sex', options: options.sexes || [] },
+  ]
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
-      <a href="#dashboard-content" className="sr-only z-50 rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
-      <Header tab={tab} lastUpdatedAt={lastUpdatedAt} loading={loading} onRefresh={refreshActiveSection} onTabChange={setTab} showRefresh={Boolean(section)} />
+    <>
+      <Header
+        activeView="siap"
+        title="SIAP Analytics"
+        statusLabel="Last synchronized"
+        statusValue={lastUpdatedAt || 'Waiting for data'}
+        loading={loading}
+        onRefresh={refreshActiveSection}
+        showRefresh={Boolean(section)}
+        tabs={TABS}
+        tab={tab}
+        onTabChange={setTab}
+      />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:py-7 lg:px-8">
         {section ? <FilterBar
+          fields={filterFields}
           filters={filters}
-          options={options}
           onChange={updateFilter}
           onClear={() => setFilters(DEFAULT_FILTERS)}
           open={filtersOpen}
@@ -615,6 +455,53 @@ export default function App() {
           </div>
         </section>
       </main>
+    </>
+  )
+}
+
+function viewFromHash(hash, fallback = 'siap') {
+  if (!hash.startsWith('#/')) return fallback
+  const id = hash.slice(2).split(/[/?]/)[0]
+  return DASHBOARD_VIEWS.some((view) => view.id === id) ? id : 'siap'
+}
+
+function ForeignStudentsFallback() {
+  return (
+    <>
+      <Header activeView="foreign-students" title="Foreign Students Data" statusLabel="Academic years" statusValue="Loading..." />
+      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8" role="status" aria-label="Loading foreign students data">
+        <div className="skeleton h-28 rounded-2xl" />
+        <div className="mt-7 grid gap-5 xl:grid-cols-2"><div className="skeleton h-96 rounded-2xl" /><div className="skeleton h-96 rounded-2xl" /></div>
+      </main>
+    </>
+  )
+}
+
+export default function App() {
+  const [view, setView] = useState(() => viewFromHash(window.location.hash))
+
+  useEffect(() => {
+    // Only "#/..." hashes are routes; the skip link and other in-page anchors must not switch dashboards.
+    const onHashChange = () => setView((current) => viewFromHash(window.location.hash, current))
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  useEffect(() => {
+    document.title = DASHBOARD_VIEWS.find((item) => item.id === view)?.documentTitle || document.title
+  }, [view])
+
+  function skipToContent(event) {
+    event.preventDefault()
+    document.getElementById('dashboard-content')?.focus()
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
+      <a href="#dashboard-content" onClick={skipToContent} className="sr-only z-50 rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
+      {view === 'foreign-students'
+        ? <Suspense fallback={<ForeignStudentsFallback />}><ForeignStudentsDashboard /></Suspense>
+        : <SiapDashboard />}
     </div>
   )
 }

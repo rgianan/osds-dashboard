@@ -1,0 +1,885 @@
+{
+  "Agoo|La Union": {
+    "lat": 16.3224,
+    "lng": 120.367,
+    "query": "Agoo, La Union, Philippines",
+    "displayName": "Agoo, La Union, Ilocos Region, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Alaminos City|Pangasinan": {
+    "lat": 16.1124,
+    "lng": 119.97348,
+    "query": "Alaminos City, Pangasinan, Philippines",
+    "displayName": "Alaminos City development, Tangcarang, Alaminos, Pangasinan, Ilocos Region, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Angeles City|Pampanga": {
+    "lat": 15.17021,
+    "lng": 120.61043,
+    "query": "Angeles City, Pampanga, Philippines",
+    "displayName": "Beyond Infinity Connections Philippines, Inc., Blk 20, Livelihood Road, Pampanga Economic Zone, Pulung Cacutud, Angeles, Central Luzon, 2009, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Antipolo City|Rizal": {
+    "lat": 14.5872,
+    "lng": 121.17592,
+    "query": "Antipolo City, Rizal, Philippines",
+    "displayName": "Antipolo, Rizal, Calabarzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Bacolod City|Negros Occidental": {
+    "lat": 10.60116,
+    "lng": 122.91961,
+    "query": "Bacolod City, Negros Occidental, Philippines",
+    "displayName": "Bacolod City Police Station 9, Araneta Street, Sum-ag, Bacolod-2, Bacolod, Negros Occidental, Negros Island Region, 6100, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Bacoor City|Cavite": {
+    "lat": 14.43113,
+    "lng": 120.96806,
+    "query": "Bacoor City, Cavite, Philippines",
+    "displayName": "City of Bacoor Government Center, Bayanan, Bacoor, Cavite, Calabarzon, 4102, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Baguio City|Benguet": {
+    "lat": 16.4023,
+    "lng": 120.596,
+    "query": "Baguio City, Benguet, Philippines",
+    "displayName": "Baguio City – Twin River – Keweng – Dalupirip National Road, Baloy, Tinongdan, Benguet, Cordillera Administrative Region, Philippines",
+    "needsReview": false,
+    "note": "Geocoder returned a point east of the city; set to the city center",
+    "source": "manual"
+  },
+  "Balanga City|Bataan": {
+    "lat": 14.67957,
+    "lng": 120.54097,
+    "query": "Balanga City, Bataan, Philippines",
+    "displayName": "Balanga, Bataan, Central Luzon, 2100, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Baliuag|Bulacan": {
+    "lat": 14.95423,
+    "lng": 120.90092,
+    "query": "Baliuag, Bulacan, Philippines",
+    "displayName": "Baliwag, Bulacan, Central Luzon, 3006, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Bantay|Ilocos Sur": {
+    "lat": 17.58109,
+    "lng": 120.38953,
+    "query": "Bantay, Ilocos Sur, Philippines",
+    "displayName": "Bantay, Ilocos Sur, Ilocos Region, 2727, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Barotac Nuevo|Iloilo": {
+    "lat": 10.89397,
+    "lng": 122.70339,
+    "query": "Barotac Nuevo, Iloilo, Philippines",
+    "displayName": "Barotac Nuevo, Iloilo, Western Visayas, 5007, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Batac City|Ilocos Norte": {
+    "lat": 18.05471,
+    "lng": 120.56452,
+    "query": "Batac City, Ilocos Norte, Philippines",
+    "displayName": "Batac, Ilocos Norte, Ilocos Region, 2906, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Batangas City|Batangas": {
+    "lat": 13.75526,
+    "lng": 121.05908,
+    "query": "Batangas City, Batangas, Philippines",
+    "displayName": "Batangas City, Batangas, Calabarzon, 4200, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Baybay City|Leyte": {
+    "lat": 10.6778,
+    "lng": 124.79775,
+    "query": "Baybay City, Leyte, Philippines",
+    "displayName": "Baybay, 5th District, Leyte, Eastern Visayas, 6521, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Bayombong|Nueva Vizcaya": {
+    "lat": 16.48293,
+    "lng": 121.15052,
+    "query": "Bayombong, Nueva Vizcaya, Philippines",
+    "displayName": "Bayombong, Nueva Vizcaya, Cagayan Valley, 3700, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Binalonan|Pangasinan": {
+    "lat": 16.04445,
+    "lng": 120.59177,
+    "query": "Binalonan, Pangasinan, Philippines",
+    "displayName": "Binalonan, Pangasinan, Ilocos Region, 2436, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Biñan City|Laguna": {
+    "lat": 14.33883,
+    "lng": 121.08418,
+    "query": "Biñan City, Laguna, Philippines",
+    "displayName": "Biñan, Laguna, Calabarzon, 4024, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Butuan City|Agusan del Norte": {
+    "lat": 8.91983,
+    "lng": 125.60447,
+    "query": "Butuan City, Agusan del Norte, Philippines",
+    "displayName": "Butuan City Police Station 4, Butuan, Agusan del Norte, Caraga, 8600, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Cabanatuan City|Nueva Ecija": {
+    "lat": 15.4846,
+    "lng": 120.97578,
+    "query": "Cabanatuan City, Nueva Ecija, Philippines",
+    "displayName": "Wesleyan University - Philippines, Tandang Sora Street, Mabini Extension, Cabanatuan, Nueva Ecija, Central Luzon, 3100, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Cabuyao City|Laguna": {
+    "lat": 14.28014,
+    "lng": 121.12348,
+    "query": "Cabuyao City, Laguna, Philippines",
+    "displayName": "Cabuyao, Laguna, Calabarzon, 4025, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Cagayan De Oro City|Misamis Oriental": {
+    "lat": 8.48607,
+    "lng": 124.65681,
+    "query": "Cagayan De Oro City, Misamis Oriental, Philippines",
+    "displayName": "University of Science and Technology of Southern Philippines, C. M. Recto Avenue, Mambato, Barangay 26, Poblacion, Cagayan de Oro, Northern Mindanao, 9000, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "Calamba City|Laguna": {
+    "lat": 14.20664,
+    "lng": 121.15506,
+    "query": "Calamba City, Laguna, Philippines",
+    "displayName": "Calamba City, National Highway 1, Barangay 1, Poblacion, Calamba, Calamba, Laguna, Calabarzon, 4027, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Caloocan City|Metro Manila": {
+    "lat": 14.65134,
+    "lng": 120.97238,
+    "query": "Caloocan City, Metro Manila, Philippines",
+    "displayName": "Caloocan, Northern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Camiling|Tarlac": {
+    "lat": 15.68646,
+    "lng": 120.41466,
+    "query": "Camiling, Tarlac, Philippines",
+    "displayName": "Camiling, Tarlac, Central Luzon, 2306, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Cebu City|Cebu": {
+    "lat": 10.32856,
+    "lng": 123.90088,
+    "query": "Cebu City, Cebu, Philippines",
+    "displayName": "University of Southern Philippines Foundation, Salinas Drive, Ucma Village, Lahug, Cebu City, Central Visayas, 6000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Dagupan City|Pangasinan": {
+    "lat": 16.04318,
+    "lng": 120.33419,
+    "query": "Dagupan City, Pangasinan, Philippines",
+    "displayName": "Dagupan City Park, Poblacion Oeste, Pogo Grande, Dagupan, Pangasinan, Ilocos Region, 2400, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Dasmariñas City|Cavite": {
+    "lat": 14.32708,
+    "lng": 120.93709,
+    "query": "Dasmariñas City, Cavite, Philippines",
+    "displayName": "Dasmariñas, Cavite, Calabarzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Davao City|Davao del Sur": {
+    "lat": 7.08577,
+    "lng": 125.61608,
+    "query": "Davao City, Davao del Sur, Philippines",
+    "displayName": "University of Southeastern Philippines - Obrero Campus, A. Iñigo Street, Barangay 18-B, Poblacion District, Davao City, Davao Region, 8000, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "Dumaguete City|Negros Oriental": {
+    "lat": 9.30548,
+    "lng": 123.30804,
+    "query": "Dumaguete City, Negros Oriental, Philippines",
+    "displayName": "Dumaguete, Negros Oriental, Negros Island Region, 6200, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Echague|Isabela": {
+    "lat": 16.70536,
+    "lng": 121.67495,
+    "query": "Echague, Isabela, Philippines",
+    "displayName": "Echague, Isabela, Cagayan Valley, 3309, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Ermita|Metro Manila": {
+    "lat": 14.57859,
+    "lng": 120.9795,
+    "query": "Ermita, Manila, Philippines",
+    "displayName": "Ermita, Fifth District, Manila, Capital District, Metro Manila, 1000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "General Santos City|South Cotabato": {
+    "lat": 6.11222,
+    "lng": 125.17219,
+    "query": "General Santos City, South Cotabato, Philippines",
+    "displayName": "General Santos, Soccsksargen, 9500, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "General Trias City|Cavite": {
+    "lat": 14.4822,
+    "lng": 120.91245,
+    "query": "General Trias City, Cavite, Philippines",
+    "displayName": "General Trias Street, Barangay 62, Zone 8, San Roque, Cavite City, Cavite, Calabarzon, 4100, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Gingoog City|Misamis Oriental": {
+    "lat": 8.82327,
+    "lng": 125.1013,
+    "query": "Gingoog City, Misamis Oriental, Philippines",
+    "displayName": "Gingoog, Misamis Oriental, Northern Mindanao, 9014, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Iba|Zambales": {
+    "lat": 15.32646,
+    "lng": 119.9801,
+    "query": "Iba, Zambales, Philippines",
+    "displayName": "Iba, Zambales, Central Luzon, 2201, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Iligan City|Lanao del Norte": {
+    "lat": 8.18745,
+    "lng": 124.26154,
+    "query": "Iligan City, Lanao del Norte, Philippines",
+    "displayName": "Iligan City Golf Course, Lanao del Norte Interior Circumferential Road, Purok 4, Tipanoy, Abuno, Iligan, Northern Mindanao, 9200, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Iloilo City|Iloilo": {
+    "lat": 10.69186,
+    "lng": 122.56885,
+    "query": "Iloilo City, Iloilo, Philippines",
+    "displayName": "Bombo Radyo Philippines, Fermin Caram Avenue, Iloilo Central Business District, Rizal Estanzuela, City Proper, Iloilo City, Western Visayas, 5000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Indang|Cavite": {
+    "lat": 14.19585,
+    "lng": 120.87849,
+    "query": "Indang, Cavite, Philippines",
+    "displayName": "Indang, Cavite, Calabarzon, 4122, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Intramuros|Metro Manila": {
+    "lat": 14.59096,
+    "lng": 120.97465,
+    "query": "Intramuros, Manila, Philippines",
+    "displayName": "Intramuros, Fifth District, Manila, Capital District, Metro Manila, 1002, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Iriga City|Camarines Sur": {
+    "lat": 13.42226,
+    "lng": 123.41294,
+    "query": "Iriga City, Camarines Sur, Philippines",
+    "displayName": "Iriga, Camarines Sur, Bicol Region, 4431, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Jimenez|Misamis Occidental": {
+    "lat": 8.33437,
+    "lng": 123.84003,
+    "query": "Jimenez, Misamis Occidental, Philippines",
+    "displayName": "Jimenez, Misamis Occidental, Northern Mindanao, 7204, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Kabacan|North Cotabato": {
+    "lat": 7.10821,
+    "lng": 124.82334,
+    "query": "Kabacan, Cotabato, Philippines",
+    "displayName": "Kabacan, Cotabato, Soccsksargen, 9407, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Kalibo|Aklan": {
+    "lat": 11.7089,
+    "lng": 122.36402,
+    "query": "Kalibo, Aklan, Philippines",
+    "displayName": "Kalibo, Aklan, Western Visayas, 5600, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Koronadal City|South Cotabato": {
+    "lat": 6.5004,
+    "lng": 124.84354,
+    "query": "Koronadal City, South Cotabato, Philippines",
+    "displayName": "Koronadal, South Cotabato, Soccsksargen, 9506, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "La Trinidad|Benguet": {
+    "lat": 16.44978,
+    "lng": 120.59009,
+    "query": "La Trinidad, Benguet, Philippines",
+    "displayName": "La Trinidad, Benguet, Cordillera Administrative Region, 2601, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Laoag City|Ilocos Norte": {
+    "lat": 18.19545,
+    "lng": 120.59268,
+    "query": "Laoag City, Ilocos Norte, Philippines",
+    "displayName": "Laoag, Brgy. 13, Ilocos Norte, Ilocos Region, 2900, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Lapu-Lapu City|Cebu": {
+    "lat": 10.30908,
+    "lng": 123.94757,
+    "query": "Lapu-Lapu City, Cebu, Philippines",
+    "displayName": "Lapu-Lapu City Central Elementary School, P. Rodriguez Street, Langob, Poblacion, Lapu-Lapu, Central Visayas, 6015, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "Las Piñas City|Metro Manila": {
+    "lat": 14.4809,
+    "lng": 120.98179,
+    "query": "Las Piñas City, Metro Manila, Philippines",
+    "displayName": "Las Piñas, Southern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Legazpi City|Albay": {
+    "lat": 13.13885,
+    "lng": 123.73457,
+    "query": "Legazpi City, Albay, Philippines",
+    "displayName": "Legazpi, Albay, Bicol Region, 4500, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Lingayen|Pangasinan": {
+    "lat": 16.02064,
+    "lng": 120.23071,
+    "query": "Lingayen, Pangasinan, Philippines",
+    "displayName": "Lingayen, Pangasinan, Ilocos Region, 2401, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Lipa City|Batangas": {
+    "lat": 13.94165,
+    "lng": 121.13807,
+    "query": "Lipa City, Batangas, Philippines",
+    "displayName": "Lipa City, Southern Tagalog Arterial Road, Tambo, Lipa, Batangas, Calabarzon, 4217, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Los Baños|Laguna": {
+    "lat": 14.17909,
+    "lng": 121.22179,
+    "query": "Los Baños, Laguna, Philippines",
+    "displayName": "Los Baños, Laguna, Calabarzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Lucban|Quezon Province": {
+    "lat": 14.1144,
+    "lng": 121.55486,
+    "query": "Lucban, Quezon, Philippines",
+    "displayName": "Lucban, Quezon, Calabarzon, 4328, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Lucena City|Quezon Province": {
+    "lat": 13.92688,
+    "lng": 121.6135,
+    "query": "Lucena City, Quezon, Philippines",
+    "displayName": "Lucena City, Quezon Avenue, Barangay 10, Lucena, 2nd District, Calabarzon, 4301, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Mabalacat City|Pampanga": {
+    "lat": 15.1782,
+    "lng": 120.58925,
+    "query": "Mabalacat City, Pampanga, Philippines",
+    "displayName": "Mabalacat City Bus Terminal Complex, Dau Access Road, San Isidro, Dau, Mabalacat, Pampanga, Central Luzon, 2010, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Makati City|Metro Manila": {
+    "lat": 14.55679,
+    "lng": 121.02112,
+    "query": "Makati City, Metro Manila, Philippines",
+    "displayName": "Makati, Southern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Malabon City|Metro Manila": {
+    "lat": 14.65785,
+    "lng": 120.95113,
+    "query": "Malabon City, Metro Manila, Philippines",
+    "displayName": "Malabon, Northern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Malate|Metro Manila": {
+    "lat": 14.57004,
+    "lng": 120.99153,
+    "query": "Malate, Manila, Philippines",
+    "displayName": "Malate, Fifth District, Manila, Capital District, Metro Manila, 1004, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Malaybalay City|Bukidnon": {
+    "lat": 8.15504,
+    "lng": 125.13057,
+    "query": "Malaybalay City, Bukidnon, Philippines",
+    "displayName": "Malaybalay, Bukidnon, Northern Mindanao, 8700, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Malolos City|Bulacan": {
+    "lat": 14.84376,
+    "lng": 120.81137,
+    "query": "Malolos City, Bulacan, Philippines",
+    "displayName": "Malolos, Bulacan, Central Luzon, 3000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Mandaluyong City|Metro Manila": {
+    "lat": 14.57744,
+    "lng": 121.0339,
+    "query": "Mandaluyong City, Metro Manila, Philippines",
+    "displayName": "Mandaluyong, Eastern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Mandaue City|Cebu": {
+    "lat": 10.3351,
+    "lng": 123.94397,
+    "query": "Mandaue City, Cebu, Philippines",
+    "displayName": "Mandaue City Science High School, Don G. LL. Ouano Street, Ibabao-Estancia, Mandaue, Central Visayas, 6014, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "Maramag|Bukidnon": {
+    "lat": 7.76107,
+    "lng": 125.00516,
+    "query": "Maramag, Bukidnon, Philippines",
+    "displayName": "Maramag, Bukidnon, Northern Mindanao, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Mati City|Davao Oriental": {
+    "lat": 6.95217,
+    "lng": 126.21668,
+    "query": "Mati City, Davao Oriental, Philippines",
+    "displayName": "Mati, Davao Oriental, Davao Region, 8200, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Muntinlupa City|Metro Manila": {
+    "lat": 14.38926,
+    "lng": 121.04491,
+    "query": "Muntinlupa City, Metro Manila, Philippines",
+    "displayName": "Muntinlupa, Southern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Murcia|Negros Occidental": {
+    "lat": 10.60665,
+    "lng": 123.04047,
+    "query": "Murcia, Negros Occidental, Philippines",
+    "displayName": "Murcia, Negros Occidental, Negros Island Region, 6129, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Nabua|Camarines Sur": {
+    "lat": 13.40752,
+    "lng": 123.37306,
+    "query": "Nabua, Camarines Sur, Philippines",
+    "displayName": "Nabua, Camarines Sur, Bicol Region, 4434, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Naga City|Camarines Sur": {
+    "lat": 13.62401,
+    "lng": 123.18503,
+    "query": "Naga City, Camarines Sur, Philippines",
+    "displayName": "Naga City, Bicol Region, 4400, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "Olongapo City|Zambales": {
+    "lat": 14.84905,
+    "lng": 120.26615,
+    "query": "Olongapo City, Zambales, Philippines",
+    "displayName": "Olongapo City Police Office, Zambales Highway, Barretto, Olongapo, Central Luzon, 2200, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Ozamiz City|Misamis Occidental": {
+    "lat": 8.14702,
+    "lng": 123.84598,
+    "query": "Ozamiz City, Misamis Occidental, Philippines",
+    "displayName": "Ozamiz, Misamis Occidental, Northern Mindanao, 7200, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Paco|Metro Manila": {
+    "lat": 14.57936,
+    "lng": 120.99502,
+    "query": "Paco, Manila, Philippines",
+    "displayName": "Paco, Fifth District, Manila, Capital District, Metro Manila, 1007, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Panabo City|Davao del Norte": {
+    "lat": 7.29987,
+    "lng": 125.68071,
+    "query": "Panabo City, Davao del Norte, Philippines",
+    "displayName": "Panabo, Davao del Norte, Davao Region, 8105, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Parañaque City|Metro Manila": {
+    "lat": 14.50081,
+    "lng": 120.99153,
+    "query": "Parañaque City, Metro Manila, Philippines",
+    "displayName": "Parañaque, Southern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Pasay City|Metro Manila": {
+    "lat": 14.5437,
+    "lng": 120.99465,
+    "query": "Pasay City, Metro Manila, Philippines",
+    "displayName": "Pasay, Southern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Pasig City|Metro Manila": {
+    "lat": 14.56052,
+    "lng": 121.07643,
+    "query": "Pasig City, Metro Manila, Philippines",
+    "displayName": "Pasig, Eastern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Pili|Camarines Sur": {
+    "lat": 13.55621,
+    "lng": 123.27408,
+    "query": "Pili, Camarines Sur, Philippines",
+    "displayName": "Pili, Camarines Sur, Bicol Region, 4418, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Puerto Princesa City|Palawan": {
+    "lat": 9.78052,
+    "lng": 118.73014,
+    "query": "Puerto Princesa City, Palawan, Philippines",
+    "displayName": "Puerto Princesa City National Science High School, Santa Monica, Tiniguiban, Puerto Princesa, Mimaropa, Philippines",
+    "needsReview": false,
+    "note": "Verified: point is inside the city"
+  },
+  "Quezon City|Metro Manila": {
+    "lat": 14.65105,
+    "lng": 121.04863,
+    "query": "Quezon City, Metro Manila, Philippines",
+    "displayName": "Quezon City, Eastern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Quiapo|Metro Manila": {
+    "lat": 14.59826,
+    "lng": 120.98361,
+    "query": "Quiapo, Manila, Philippines",
+    "displayName": "Quiapo, Third District, Manila, Capital District, Metro Manila, 1001, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Roxas City|Capiz": {
+    "lat": 11.58316,
+    "lng": 122.75256,
+    "query": "Roxas City, Capiz, Philippines",
+    "displayName": "Roxas City, Capiz, Western Visayas, 5800, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sampaloc|Metro Manila": {
+    "lat": 14.6022,
+    "lng": 120.99406,
+    "query": "Sampaloc, Manila, Philippines",
+    "displayName": "Sampaloc, Fourth District, Manila, Capital District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Carlos City|Pangasinan": {
+    "lat": 15.92605,
+    "lng": 120.34642,
+    "query": "San Carlos City, Pangasinan, Philippines",
+    "displayName": "San Carlos City Old Public Market, Palaris, Bonifacio, San Carlos, Pangasinan, Ilocos Region, 2420, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Fernando City|La Union": {
+    "lat": 16.60477,
+    "lng": 120.30298,
+    "query": "San Fernando City, La Union, Philippines",
+    "displayName": "National Grid Corporation of the Philippines, Poro, San Fernando, La Union, Ilocos Region, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Jose del Monte City|Bulacan": {
+    "lat": 14.8102,
+    "lng": 121.04741,
+    "query": "San Jose del Monte City, Bulacan, Philippines",
+    "displayName": "San Jose del Monte, Bulacan, Central Luzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Miguel|Metro Manila": {
+    "lat": 14.59653,
+    "lng": 120.9939,
+    "query": "San Miguel, Manila, Philippines",
+    "displayName": "San Miguel, Sixth District, Manila, Capital District, Metro Manila, 1005, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Pablo City|Laguna": {
+    "lat": 14.07191,
+    "lng": 121.32138,
+    "query": "San Pablo City, Laguna, Philippines",
+    "displayName": "San Pablo City, Rizal Avenue, VII-A, San Pablo, Laguna, Calabarzon, 4000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Santiago City|Isabela": {
+    "lat": 16.6916,
+    "lng": 121.54786,
+    "query": "Santiago City, Isabela, Philippines",
+    "displayName": "Santiago, Isabela, Cagayan Valley, 3311, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Science City of Muñoz|Nueva Ecija": {
+    "lat": 15.71354,
+    "lng": 120.90395,
+    "query": "Muñoz, Nueva Ecija, Philippines",
+    "displayName": "Muñoz, Nueva Ecija, Central Luzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Silang|Cavite": {
+    "lat": 14.2234,
+    "lng": 120.97428,
+    "query": "Silang, Cavite, Philippines",
+    "displayName": "Silang, Cavite, Calabarzon, 4118, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sison|Pangasinan": {
+    "lat": 16.17267,
+    "lng": 120.50969,
+    "query": "Sison, Pangasinan, Philippines",
+    "displayName": "Sison, Pangasinan, Ilocos Region, 2434, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sta. Cruz|Laguna": {
+    "lat": 14.28182,
+    "lng": 121.41489,
+    "query": "Santa Cruz, Laguna, Philippines",
+    "displayName": "Santa Cruz, Laguna, Calabarzon, 4009, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sta. Cruz|Metro Manila": {
+    "lat": 14.5999,
+    "lng": 120.98033,
+    "query": "Santa Cruz, Manila, Philippines",
+    "displayName": "Santa Cruz, Third District, Manila, Capital District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sta. Cruz|Zambales": {
+    "lat": 15.76261,
+    "lng": 119.91,
+    "query": "Santa Cruz, Zambales, Philippines",
+    "displayName": "Santa Cruz, Zambales, Central Luzon, 2213, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sta. Mesa|Metro Manila": {
+    "lat": 14.59883,
+    "lng": 121.01713,
+    "query": "Santa Mesa, Manila, Philippines",
+    "displayName": "Santa Mesa, Sixth District, Manila, Capital District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Sta. Rosa City|Laguna": {
+    "lat": 14.3122,
+    "lng": 121.1114,
+    "query": "Santa Rosa City, Laguna, Philippines",
+    "displayName": "Santa Rosa–Tagaytay, Cavite-Laguna Expressway, Carmen, Silang, Cavite, Calabarzon, 4118, Philippines",
+    "needsReview": false,
+    "note": "Geocoder returned a point southwest of the city; set to the city center",
+    "source": "manual"
+  },
+  "Tacloban City|Leyte": {
+    "lat": 11.18971,
+    "lng": 125.00321,
+    "query": "Tacloban City, Leyte, Philippines",
+    "displayName": "Palo-Tacloban City Boundary, Tacloban-Baybay South Road, Pawing, Palo, 1st District, Leyte, Eastern Visayas, 9501, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Tagaytay City|Cavite": {
+    "lat": 14.09927,
+    "lng": 120.93919,
+    "query": "Tagaytay City, Cavite, Philippines",
+    "displayName": "Tagaytay, Cavite, Calabarzon, 4120, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Tagbilaran City|Bohol": {
+    "lat": 9.62721,
+    "lng": 123.87882,
+    "query": "Tagbilaran City, Bohol, Philippines",
+    "displayName": "Tagbilaran City Friendship Park, Bool, Tagbilaran, Bohol, Central Visayas, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Taguig City|Metro Manila": {
+    "lat": 14.52705,
+    "lng": 121.07449,
+    "query": "Taguig City, Metro Manila, Philippines",
+    "displayName": "Taguig, Southern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Tagum City|Davao del Norte": {
+    "lat": 7.44708,
+    "lng": 125.80949,
+    "query": "Tagum City, Davao del Norte, Philippines",
+    "displayName": "Tagum, Davao del Norte, Davao Region, 8100, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Talisay City|Negros Occidental": {
+    "lat": 10.73726,
+    "lng": 122.96733,
+    "query": "Talisay City, Negros Occidental, Philippines",
+    "displayName": "Talisay, Negros Occidental, Negros Island Region, 6115, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Tanay|Rizal": {
+    "lat": 14.49854,
+    "lng": 121.28563,
+    "query": "Tanay, Rizal, Philippines",
+    "displayName": "Tanay, Rizal, Calabarzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Tarlac City|Tarlac": {
+    "lat": 15.48612,
+    "lng": 120.58935,
+    "query": "Tarlac City, Tarlac, Philippines",
+    "displayName": "Tarlac City, Tarlac, Central Luzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Taytay|Rizal": {
+    "lat": 14.56764,
+    "lng": 121.13074,
+    "query": "Taytay, Rizal, Philippines",
+    "displayName": "Taytay, Rizal, Calabarzon, 1920, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Tuguegarao City|Cagayan": {
+    "lat": 17.61189,
+    "lng": 121.73004,
+    "query": "Tuguegarao City, Cagayan, Philippines",
+    "displayName": "Tuguegarao, Cagayan, Cagayan Valley, 3500, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Urdaneta City|Pangasinan": {
+    "lat": 15.976,
+    "lng": 120.5669,
+    "query": "Urdaneta City, Pangasinan, Philippines",
+    "displayName": "Urdaneta, Pangasinan, Ilocos Region, 2428, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Valencia City|Bukidnon": {
+    "lat": 7.90288,
+    "lng": 125.0898,
+    "query": "Valencia City, Bukidnon, Philippines",
+    "displayName": "Valencia, Bukidnon, Northern Mindanao, 8709, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Valenzuela City|Metro Manila": {
+    "lat": 14.69169,
+    "lng": 120.96945,
+    "query": "Valenzuela City, Metro Manila, Philippines",
+    "displayName": "Valenzuela, Northern Manila District, Metro Manila, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Vigan City|Ilocos Sur": {
+    "lat": 17.57535,
+    "lng": 120.38755,
+    "query": "Vigan City, Ilocos Sur, Philippines",
+    "displayName": "Vigan, Ilocos Sur, Ilocos Region, 2700, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Zamboanga City|Zamboanga del Sur": {
+    "lat": 6.9214,
+    "lng": 122.079,
+    "query": "Zamboanga City, Zamboanga del Sur, Philippines",
+    "displayName": "Pagadian-Zamboanga City Highway, Gemilina, Poblacion, Woodland, Begong, Zamboanga del Sur, Zamboanga Peninsula, 7043, Philippines",
+    "needsReview": false,
+    "note": "Geocoder returned a point near Pagadian; set to the city center",
+    "source": "manual"
+  }
+}

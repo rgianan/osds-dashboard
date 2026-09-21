@@ -11,3 +11,8 @@ firebase/functions/.env.*
 !firebase/functions/.env.example
 *service-account*.json
 
+# Raw source workbooks contain personal data (passport, ACR, birth dates, addresses).
+# Only the aggregated frontend/src/data/foreign-students.json belongs in the repo.
+*.xlsx
+*.xls
+
