@@ -12,7 +12,8 @@ firebase/functions/.env.*
 *service-account*.json
 
 # Raw source workbooks contain personal data (passport, ACR, birth dates, addresses).
-# Only the aggregated frontend/src/data/foreign-students.json belongs in the repo.
+# Only counts are published (to Firestore); the generated summary is rebuilt from the workbook.
 *.xlsx
 *.xls
+firebase/foreign-students/foreign-students.json
 

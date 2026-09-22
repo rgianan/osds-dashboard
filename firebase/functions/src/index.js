@@ -6,6 +6,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { logger } from 'firebase-functions'
 import { getDashboardData } from './dashboard.js'
+import { getForeignStudents } from './foreign-students.js'
 import { processCsvObject } from './importer.js'
 
 initializeApp()
@@ -44,6 +45,24 @@ export const dashboardApi = onRequest({ timeoutSeconds: 120, memory: '512MiB', c
   } catch (error) {
     logger.error('dashboardApi failed', error)
     return response.status(error.status || 500).json({ ok: false, message: error.message || 'Dashboard backend failed.' })
+  }
+})
+
+// Public, read-only counts for sharing: GET ?academicYear=&region=&sex=&nationality=&format=summary|cube|dimensions
+export const foreignStudentsApi = onRequest({ timeoutSeconds: 30, memory: '256MiB', cors: false, invoker: 'public', maxInstances: 5 }, async (request, response) => {
+  response.set('Access-Control-Allow-Origin', '*')
+  response.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  response.set('Access-Control-Allow-Headers', 'Content-Type')
+  if (request.method === 'OPTIONS') return response.status(204).send('')
+  if (request.method !== 'GET') return response.status(405).json({ ok: false, message: 'Use GET.' })
+
+  try {
+    const result = await getForeignStudents(db, request.query)
+    response.set('Cache-Control', 'public, max-age=300')
+    return response.json(result)
+  } catch (error) {
+    if (!error.status) logger.error('foreignStudentsApi failed', error)
+    return response.status(error.status || 500).json({ ok: false, message: error.status ? error.message : 'Foreign students API failed.' })
   }
 })
 

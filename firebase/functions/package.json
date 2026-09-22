@@ -13,7 +13,9 @@
     "deploy": "firebase deploy --only functions,firestore,storage",
     "migrate:csv": "node src/migrate-csv.js",
     "rollback": "node src/rollback.js",
-    "set-admin": "node src/set-admin.js"
+    "set-admin": "node src/set-admin.js",
+    "build:foreign-students": "python ../foreign-students/build_foreign_students.py",
+    "publish:foreign-students": "node src/publish-foreign-students.js"
   },
   "dependencies": {
     "csv-parse": "7.0.0",

@@ -20,21 +20,38 @@ The Firebase backend and portal import workflow are included under `firebase/`. 
 
 ## Foreign Students Data
 
-The dashboard has two views, switched from the header: **SIAP** (`#/siap`) and **Foreign Students Data** (`#/foreign-students`). The Foreign Students view reads `frontend/src/data/foreign-students.json`, a counts-only summary built from the CHED foreign students workbook. It has no backend.
+The dashboard has two views, switched from the header: **SIAP** (`#/siap`) and **Foreign Students Data** (`#/foreign-students`). Foreign Students data is a counts-only summary of the CHED foreign students workbook, stored in Firestore and served by the public, read-only `foreignStudentsApi` function. The dashboard reads the same API.
 
-To update it, run from `frontend/` (Python 3, no extra packages):
+### Updating the data
+
+Run from `firebase/functions/` (Python 3, no extra packages; Google application-default credentials for the publish step):
 
 ```bash
-npm run data:foreign-students -- "path/to/foreign-students.xlsx"
+npm run build:foreign-students -- "path/to/foreign-students.xlsx"
+npm run publish:foreign-students
 ```
 
-Then commit the regenerated JSON and redeploy. The script:
+The build step writes `firebase/foreign-students/foreign-students.json`. It:
 
-- reads only academic year, region, sex, nationality, and the HEI's city and province. Passport, ACR, birth-date, and address columns are never written out. Keep the workbook out of the repository; `*.xlsx` is gitignored.
+- reads only academic year, region, sex, nationality, and the HEI's city and province. Birth-date, address, passport, and ACR columns are never written out. Keep the workbook out of the repository; `*.xlsx` is gitignored.
+- finds the HEI city and province columns by matching their values against the HEI list (`Sheet2`), so mislabeled headers don't matter.
 - combines nationality spellings (for example `INDIAN` and `Indian`) through the rules in `NATIONALITY_SYNONYMS`.
-- places HEI cities on the map using `frontend/scripts/ph-city-coordinates.json`. New cities are geocoded once through OpenStreetMap Nominatim, which receives only city and province names. Check any entry the script reports for review before deploying.
+- places HEI cities on the map using `firebase/foreign-students/ph-city-coordinates.json`. New cities are geocoded once through OpenStreetMap Nominatim, which receives only city and province names. Check any entry the script reports for review before publishing.
 
-Counts are enrollment records per academic year, so a student enrolled in several years is counted once per year when "All years" is selected.
+The publish step stores the summary as a new version in `foreignStudentsDatasets/{version}`, switches `config/foreignStudents.currentVersion` to it, and keeps the five most recent versions. No site redeploy is needed. The API picks up a new version within a minute, and responses may be cached for up to five minutes.
+
+### API
+
+`GET https://asia-southeast1-osds-dashboard.cloudfunctions.net/foreignStudentsApi`
+
+| Query parameter | Values |
+| --- | --- |
+| `format` | `summary` (default): totals by academic year, region, sex, nationality, and city. `cube`: every count cell. `dimensions`: the valid filter values. |
+| `academicYear`, `region`, `sex`, `nationality` | Optional filters, matched case-insensitively against `format=dimensions`. |
+
+Example: `...foreignStudentsApi?academicYear=2024-2025&nationality=Indian`
+
+Counts are enrollment records per academic year, so a student enrolled in several years is counted once per year when no academic year is selected.
 
 ## Apps Script performance setup
 

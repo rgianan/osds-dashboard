@@ -1,16 +1,17 @@
-"""Build the Foreign Students dashboard data from the CHED foreign-students workbook.
+"""Build the Foreign Students summary from the CHED foreign-students workbook.
 
-Usage (from the frontend directory):
-    python scripts/build_foreign_students.py path/to/data_fs.xlsx
+Usage (from firebase/functions):
+    npm run build:foreign-students -- "path/to/foreign-students.xlsx"
+    npm run publish:foreign-students
 
-The workbook contains personal data (dates of birth, addresses, passport and
-ACR numbers). This script reads only academic year, region, sex, nationality,
-and the HEI's city/province, and writes counts per combination of those fields
-to src/data/foreign-students.json. No row-level record leaves this script.
+The workbook can contain personal data (dates of birth, addresses). This script
+reads only academic year, region, sex, nationality, and the HEI's city and
+province, and writes counts per combination of those fields to
+foreign-students.json next to this script. No row-level record is written.
 
 HEI cities are geocoded once through OpenStreetMap Nominatim (city and province
-names only) and cached in scripts/ph-city-coordinates.json, so later builds run
-offline. Review any entry marked "needsReview" in that file.
+names only) and cached in ph-city-coordinates.json, so later builds run offline.
+Review any entry the script reports before publishing.
 """
 import argparse
 import json
@@ -23,27 +24,29 @@ import zipfile
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 from statistics import median
 
-ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_OUT = ROOT / "src" / "data" / "foreign-students.json"
-DEFAULT_COORDS = ROOT / "scripts" / "ph-city-coordinates.json"
+HERE = Path(__file__).resolve().parent
+DEFAULT_OUT = HERE / "foreign-students.json"
+DEFAULT_COORDS = HERE / "ph-city-coordinates.json"
 
-# (header text before the first line break, occurrence) in the "data" sheet.
-# The HEI province/city columns are VLOOKUP results that all share one header,
-# so they are selected by occurrence and verified against Sheet2 below.
+# (header text before the first line break, occurrence) in the data sheet.
 COLUMNS = {
     "academic_year": ("Academic Year", 0),
     "region": ("Region", 0),
     "sex": ("Sex", 0),
     "nationality": ("Nationality", 0),
-    "hei_province": ("Not Found / Does Not Match the UII", 4),
-    "hei_city": ("Not Found / Does Not Match the UII", 5),
 }
+# The HEI city and province columns are lookups from the HEI list, and their
+# headers have been mislabeled in past versions of the workbook, so they are
+# found by content: the column whose values best match the HEI list's
+# City/Municipality (or Province) column.
+MIN_HEI_MATCH = 0.9
 DATA_SHEET = "data"
 HEI_SHEET = "Sheet2"
-HEI_SHEET_CITY_HEADER = "City/Municipality"
+HEI_SHEET_HEADERS = {"city": "City/Municipality", "province": "Province"}
 
 SEX_LABELS = {"m": "Male", "male": "Male", "f": "Female", "female": "Female"}
 NOT_SPECIFIED = "Not specified"
@@ -137,6 +140,10 @@ def _header_key(text):
     return str(text or "").split("\n")[0].strip().lower()
 
 
+def _clean(value):
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
 def _resolve_columns(header_row):
     positions = defaultdict(list)
     for index in sorted(header_row):
@@ -150,8 +157,36 @@ def _resolve_columns(header_row):
     return resolved
 
 
-def _clean(value):
-    return re.sub(r"\s+", " ", str(value or "")).strip()
+def _hei_reference(archive, sheets, strings):
+    if HEI_SHEET not in sheets:
+        sys.exit(f"Sheet '{HEI_SHEET}' (the HEI list) is required to identify the HEI city and province columns.")
+    rows = _rows(archive, sheets[HEI_SHEET], strings)
+    header = next(rows, {})
+    indexes = {key: next((i for i, h in header.items() if _clean(h) == name), None) for key, name in HEI_SHEET_HEADERS.items()}
+    missing = [HEI_SHEET_HEADERS[key] for key, index in indexes.items() if index is None]
+    if missing:
+        sys.exit(f"Sheet '{HEI_SHEET}' is missing column(s): {', '.join(missing)}")
+    values = {key: set() for key in indexes}
+    for row in rows:
+        for key, index in indexes.items():
+            if row.get(index):
+                values[key].add(_clean(row[index]).lower())
+    return values
+
+
+def _best_match_column(rows, header_row, reference, label):
+    rates = []
+    for index in sorted(header_row):
+        matched = sum(1 for row in rows if _clean(row.get(index)).lower() in reference)
+        rates.append((matched / len(rows), index))
+    rates.sort(reverse=True)
+    rate, index = rates[0]
+    name = _clean(header_row[index])
+    if rate < MIN_HEI_MATCH:
+        candidates = ", ".join(f"'{_clean(header_row[i])}' {r:.0%}" for r, i in rates[:3])
+        sys.exit(f"No column matches the HEI list's {label} values closely enough (best: {candidates}).")
+    print(f"HEI {label}: column '{name}' ({rate:.1%} of rows match {HEI_SHEET})")
+    return index
 
 
 # --- Normalization ------------------------------------------------------------------
@@ -161,7 +196,7 @@ def _sex(value):
 
 
 def _nationality_resolver(raw_counts):
-    """Map each raw value to one canonical label: synonyms first, then the most common casing."""
+    """Map each raw value to one label: synonyms first, then the most common casing."""
     casing = defaultdict(Counter)
     for raw, count in raw_counts.items():
         casing[raw.lower()][raw] += count
@@ -221,7 +256,6 @@ def _geocode(city, province):
 
 
 def _distance_km(a, b):
-    from math import asin, cos, radians, sin, sqrt
     lat1, lng1, lat2, lng2 = map(radians, (a[0], a[1], b[0], b[1]))
     h = sin((lat2 - lat1) / 2) ** 2 + cos(lat1) * cos(lat2) * sin((lng2 - lng1) / 2) ** 2
     return 6371 * 2 * asin(sqrt(h))
@@ -232,13 +266,13 @@ def _flag_outliers(coords, cities):
     by_province = defaultdict(list)
     for city, province in cities:
         entry = coords.get(f"{city}|{province}")
-        if entry and entry.get("lat") is not None:
-            by_province[province].append((city, entry))
+        if entry and entry.get("lat") is not None and entry.get("source") != "manual":
+            by_province[province].append(entry)
     for province, entries in by_province.items():
         if len(entries) < 3:
             continue
-        center = (median(e["lat"] for _, e in entries), median(e["lng"] for _, e in entries))
-        for city, entry in entries:
+        center = (median(e["lat"] for e in entries), median(e["lng"] for e in entries))
+        for entry in entries:
             km = _distance_km(center, (entry["lat"], entry["lng"]))
             if km > OUTLIER_KM:
                 entry["needsReview"] = True
@@ -257,7 +291,7 @@ def _load_coordinates(path, cities, allow_network):
         except Exception as error:  # keep going; the city is reported as unmapped
             coords[f"{city}|{province}"] = {"lat": None, "lng": None, "needsReview": True, "note": f"Lookup failed: {error}"}
         time.sleep(1.1)  # Nominatim usage policy: at most one request per second
-    for key, entry in coords.items():
+    for entry in coords.values():
         lat, lng = entry.get("lat"), entry.get("lng")
         if lat is not None and not (PH_BOUNDS["lat"][0] <= lat <= PH_BOUNDS["lat"][1] and PH_BOUNDS["lng"][0] <= lng <= PH_BOUNDS["lng"][1]):
             entry["needsReview"] = True
@@ -275,37 +309,23 @@ def build(xlsx_path, out_path, coords_path, allow_network):
         sheets = _sheet_paths(archive)
         if DATA_SHEET not in sheets:
             sys.exit(f"Sheet '{DATA_SHEET}' not found. Sheets: {', '.join(sheets)}")
-
-        hei_cities = set()
-        if HEI_SHEET in sheets:
-            hei_rows = _rows(archive, sheets[HEI_SHEET], strings)
-            header = next(hei_rows, {})
-            city_index = next((i for i, h in header.items() if _clean(h) == HEI_SHEET_CITY_HEADER), None)
-            if city_index is not None:
-                hei_cities = {_clean(r.get(city_index)).lower() for r in hei_rows if r.get(city_index)}
-
+        reference = _hei_reference(archive, sheets, strings)
         data_rows = _rows(archive, sheets[DATA_SHEET], strings)
-        columns = _resolve_columns(next(data_rows))
-        records = []
-        raw_nationalities = Counter()
-        for row in data_rows:
-            if not row:
-                continue
-            record = {field: _clean(row.get(index)) for field, index in columns.items()}
-            if not any(record.values()):
-                continue
-            raw_nationalities[record["nationality"]] += 1
-            records.append(record)
+        header_row = next(data_rows)
+        rows = [row for row in data_rows if row]
 
-    if hei_cities:
-        known = sum(1 for r in records if r["hei_city"].lower() in hei_cities)
-        if known / len(records) < 0.9:
-            sys.exit(f"Only {known / len(records):.0%} of HEI city values appear in {HEI_SHEET}; check COLUMNS['hei_city'].")
+    columns = _resolve_columns(header_row)
+    columns["hei_city"] = _best_match_column(rows, header_row, reference["city"], "city")
+    columns["hei_province"] = _best_match_column(rows, header_row, reference["province"], "province")
 
+    records = [{field: _clean(row.get(index)) for field, index in columns.items()} for row in rows]
+    records = [record for record in records if any(record.values())]
+    raw_nationalities = Counter(record["nationality"] for record in records)
     nationality = _nationality_resolver(raw_nationalities)
-    counts = Counter()
-    for r in records:
-        counts[(r["academic_year"], r["region"], _sex(r["sex"]), nationality(r["nationality"]), (r["hei_city"], r["hei_province"]))] += 1
+    counts = Counter(
+        (r["academic_year"], r["region"], _sex(r["sex"]), nationality(r["nationality"]), (r["hei_city"], r["hei_province"]))
+        for r in records
+    )
 
     years = sorted({k[0] for k in counts})
     regions = sorted({k[1] for k in counts}, key=_region_sort_key)
@@ -319,7 +339,6 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     output = {
         "meta": {
             "sourceFile": Path(xlsx_path).name,
-            "sourceModified": datetime.fromtimestamp(Path(xlsx_path).stat().st_mtime, timezone.utc).date().isoformat(),
             "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "totalRecords": len(records),
             "cityBasis": "HEI city",
@@ -343,15 +362,16 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
-    review = {k: v for k, v in coords.items() if v.get("needsReview") and tuple(k.split("|")) in set(cities)}
+    city_set = set(cities)
+    review = {k: v for k, v in coords.items() if v.get("needsReview") and tuple(k.split("|")) in city_set}
     unmapped = sum(count for (_, _, _, _, c), count in counts.items() if coords.get(f"{c[0]}|{c[1]}", {}).get("lat") is None)
-    print(f"Wrote {out_path.relative_to(ROOT)}: {len(records):,} records -> {len(counts):,} count cells, {out_path.stat().st_size / 1024:.0f} KB")
+    merged = sum(1 for raw in raw_nationalities if nationality(raw) != raw)
+    print(f"Wrote {out_path.name}: {len(records):,} records -> {len(counts):,} count cells, {out_path.stat().st_size / 1024:.0f} KB")
     print(f"Dimensions: {len(years)} years, {len(regions)} regions, {len(sexes)} sexes, {len(nationalities)} nationalities, {len(cities)} cities")
     print(f"Records at cities without coordinates: {unmapped:,}")
-    merged = sorted({raw for raw in raw_nationalities if nationality(raw) != raw})
-    print(f"Nationality spellings merged: {len(merged)} ({len(raw_nationalities)} raw -> {len(nationalities)} labels)")
+    print(f"Nationality spellings merged: {merged} ({len(raw_nationalities)} raw -> {len(nationalities)} labels)")
     if review:
-        print(f"\nCoordinates to review in {coords_path.relative_to(ROOT)}:")
+        print(f"\nCoordinates to review in {coords_path.name}:")
         for key, entry in review.items():
             print(f"  {key}: {entry.get('note')} -> {entry.get('displayName', '')[:90]}")
 
