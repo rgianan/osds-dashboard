@@ -18,6 +18,38 @@ The Firebase backend and portal import workflow are included under `firebase/`. 
 
 `VITE_FIREBASE_API_URL` takes precedence over `VITE_GAS_WEB_APP_URL`, so the existing Apps Script deployment can remain configured as a quick rollback during the transition.
 
+## SIAP data and shareable API
+
+SIAP is visible in the dashboard navigation at `#/siap` and is the default view.
+To update from an Excel workbook, extract only the dashboard's allowlisted columns,
+then use the existing versioned import (run from the repository root):
+
+```powershell
+python firebase/build_siap.py "path/to/SIAP Data_updated_wo_names.xlsx" "$env:TEMP/siap-import.csv"
+$env:GOOGLE_CLOUD_PROJECT = "osds-dashboard"
+$env:DASHBOARD_STORAGE_BUCKET = "osds-dashboard.firebasestorage.app"
+node firebase/functions/src/migrate-csv.js "$env:TEMP/siap-import.csv"
+```
+
+The `SIAP Data` sheet supplies one row per internship record. The derived `Stops`
+sheet is excluded to avoid double-counting. Names, addresses, and columns outside
+the import template are excluded. The previous active dataset is retained for rollback.
+
+Public API: `GET https://asia-southeast1-osds-dashboard.cloudfunctions.net/siapApi`
+
+| Query parameter | Values |
+| --- | --- |
+| `section` | `overview` (default), `timeline`, `hei`, `geography` |
+| `year`, `quarter`, `country`, `region`, `sex` | Optional filters. Use exact values from the response's `options`; quarters are `Q1`–`Q4`. |
+
+Example: `.../siapApi?section=overview&year=2026&country=Japan`
+
+Responses contain `ok`, `section`, `filters`, `dataVersion`, `lastUpdatedAt`,
+`options`, and the selected section's aggregates. There is no row export or
+endorsement-identifier list. Chart rankings retain the dashboard's top-N limits.
+Responses can be cached for five minutes; unsupported parameters return HTTP 400.
+The dashboard's existing `dashboardApi` POST interface is unchanged.
+
 ## Foreign Students Data
 
 The dashboard has two views, switched from the header: **SIAP** (`#/siap`) and **Foreign Students Data** (`#/foreign-students`). Foreign Students data is a counts-only summary of the CHED foreign students workbook, stored in Firestore and served by the public, read-only `foreignStudentsApi` function. The dashboard reads the same API.

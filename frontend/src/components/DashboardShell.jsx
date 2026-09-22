@@ -3,7 +3,7 @@ import { AlertTriangle, Banknote, BarChart3, ChevronDown, Filter, Globe2, Plane,
 
 // hidden: left out of the header switcher; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
-  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', badge: 'SIAP', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane, hidden: true },
+  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', badge: 'SIAP', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane },
   { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', badge: 'FS', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
   { id: 'tosf', label: 'TOSF Increase', title: 'Tuition and Other School Fees', badge: 'TOSF', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
   { id: 'anti-hazing', label: 'Anti-Hazing Law', title: 'Anti-Hazing Law (RA 11053)', badge: 'AH', href: '#/anti-hazing', documentTitle: 'Anti-Hazing Law (RA 11053) | CHED', icon: ShieldCheck },
