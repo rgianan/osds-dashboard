@@ -218,12 +218,14 @@ Add these:
 
 ```env
 VITE_FIREBASE_API_URL=https://asia-southeast1-osds-dashboard.cloudfunctions.net/dashboardApi
-VITE_FIREBASE_API_KEY=AIzaSyDLVCmlA-sHNFgWPzVVyUG5NwN3WzlBjIM
+VITE_FIREBASE_API_KEY=<Web API key from Firebase Console > Project settings > General>
 VITE_FIREBASE_AUTH_DOMAIN=osds-dashboard.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=osds-dashboard
 VITE_FIREBASE_STORAGE_BUCKET=osds-dashboard.firebasestorage.app
 VITE_FIREBASE_APP_ID=1:445999268721:web:991a7158835be9ce32acd0
 ```
+
+Do not write the real API key into files that are committed. It still reaches every visitor's browser inside the site bundle, which is how Firebase web keys work. Access is limited by the key's restrictions in Google Cloud Console (allowed websites and APIs) and by the Firestore and Storage security rules.
 
 Keep the old Apps Script URL temporarily as a rollback path:
 
@@ -294,7 +296,7 @@ Expected Firebase values:
 
 ```env
 VITE_FIREBASE_API_URL=https://asia-southeast1-osds-dashboard.cloudfunctions.net/dashboardApi
-VITE_FIREBASE_API_KEY=AIzaSyDLVCmlA-sHNFgWPzVVyUG5NwN3WzlBjIM
+VITE_FIREBASE_API_KEY=<Web API key from Firebase Console > Project settings > General>
 VITE_FIREBASE_AUTH_DOMAIN=osds-dashboard.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=osds-dashboard
 VITE_FIREBASE_STORAGE_BUCKET=osds-dashboard.firebasestorage.app

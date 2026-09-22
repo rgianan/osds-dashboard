@@ -17,7 +17,7 @@ import {
 import { postJson } from './lib/api.js'
 import { n } from './lib/format.js'
 import { KpiCard, Panel } from './components/Panel.jsx'
-import { DASHBOARD_VIEWS, DefinitionNote, EmptyState, FilterBar, Header, Visualization } from './components/DashboardShell.jsx'
+import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, FilterBar, Header, Visualization } from './components/DashboardShell.jsx'
 
 const loadCharts = () => import('./components/Charts.jsx')
 const Donut = lazy(() => loadCharts().then((module) => ({ default: module.Donut })))
@@ -27,7 +27,12 @@ const MonthLine = lazy(() => loadCharts().then((module) => ({ default: module.Mo
 const StackedHeiCountryBars = lazy(() => loadCharts().then((module) => ({ default: module.StackedHeiCountryBars })))
 const RouteMap = lazy(() => import('./components/RouteMap.jsx').then((module) => ({ default: module.RouteMap })))
 const DataImport = lazy(() => import('./components/DataImport.jsx'))
-const ForeignStudentsDashboard = lazy(() => import('./components/ForeignStudentsDashboard.jsx'))
+// Every dashboard except SIAP loads on demand when its view is opened.
+const VIEW_COMPONENTS = {
+  'foreign-students': lazy(() => import('./components/ForeignStudentsDashboard.jsx')),
+  tosf: lazy(() => import('./components/TosfDashboard.jsx')),
+  'anti-hazing': lazy(() => import('./components/AntiHazingDashboard.jsx')),
+}
 
 const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
@@ -91,29 +96,6 @@ function InsightSummary({ items }) {
         </div>
       </div>
     </section>
-  )
-}
-
-function DataTable({ rows, columns, caption }) {
-  const safeRows = Array.isArray(rows) ? rows : []
-  if (!safeRows.length) return <EmptyState compact />
-
-  return (
-    <div className="max-h-[380px] overflow-auto rounded-xl border border-slate-200">
-      <table className="min-w-full text-sm">
-        <caption className="sr-only">{caption}</caption>
-        <thead className="sticky top-0 z-10 bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
-          <tr>{columns.map((column) => <th key={column.key} scope="col" className={`border-b border-slate-200 px-3 py-2.5 ${column.num ? 'text-right' : ''}`}>{column.label}</th>)}</tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {safeRows.map((row, index) => (
-            <tr key={row.name || index} className="bg-white transition hover:bg-blue-50/50">
-              {columns.map((column) => <td key={column.key} className={`px-3 py-2.5 text-slate-700 ${column.num ? 'text-right font-semibold tabular-nums' : ''}`}>{column.render ? column.render(row) : row[column.key]}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   )
 }
 
@@ -459,17 +441,18 @@ function SiapDashboard() {
   )
 }
 
-function viewFromHash(hash, fallback = 'siap') {
+function viewFromHash(hash, fallback = DEFAULT_VIEW_ID) {
   if (!hash.startsWith('#/')) return fallback
   const id = hash.slice(2).split(/[/?]/)[0]
-  return DASHBOARD_VIEWS.some((view) => view.id === id) ? id : 'siap'
+  return DASHBOARD_VIEWS.some((view) => view.id === id) ? id : DEFAULT_VIEW_ID
 }
 
-function ForeignStudentsFallback() {
+function ViewFallback({ viewId }) {
+  const view = DASHBOARD_VIEWS.find((item) => item.id === viewId)
   return (
     <>
-      <Header activeView="foreign-students" title="Foreign Students Data" statusLabel="Academic years" statusValue="Loading..." />
-      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8" role="status" aria-label="Loading foreign students data">
+      <Header activeView={viewId} title={view.title} statusLabel="Status" statusValue="Loading..." />
+      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8" role="status" aria-label={`Loading ${view.title}`}>
         <div className="skeleton h-28 rounded-2xl" />
         <div className="mt-7 grid gap-5 xl:grid-cols-2"><div className="skeleton h-96 rounded-2xl" /><div className="skeleton h-96 rounded-2xl" /></div>
       </main>
@@ -496,11 +479,12 @@ export default function App() {
     document.getElementById('dashboard-content')?.focus()
   }
 
+  const ViewComponent = VIEW_COMPONENTS[view]
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
       <a href="#dashboard-content" onClick={skipToContent} className="sr-only z-50 rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
-      {view === 'foreign-students'
-        ? <Suspense fallback={<ForeignStudentsFallback />}><ForeignStudentsDashboard /></Suspense>
+      {ViewComponent
+        ? <Suspense key={view} fallback={<ViewFallback viewId={view} />}><ViewComponent /></Suspense>
         : <SiapDashboard />}
     </div>
   )

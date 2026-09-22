@@ -1,10 +1,15 @@
 import { Suspense } from 'react'
-import { BarChart3, ChevronDown, Filter, Globe2, Plane, RefreshCw, RotateCcw, X } from 'lucide-react'
+import { AlertTriangle, Banknote, BarChart3, ChevronDown, Filter, Globe2, Plane, RefreshCw, RotateCcw, ShieldCheck, X } from 'lucide-react'
 
+// hidden: left out of the header switcher; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
-  { id: 'siap', label: 'SIAP', badge: 'SIAP', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane },
-  { id: 'foreign-students', label: 'Foreign Students Data', badge: 'FS', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
+  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', badge: 'SIAP', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane, hidden: true },
+  { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', badge: 'FS', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
+  { id: 'tosf', label: 'TOSF Increase', title: 'Tuition and Other School Fees', badge: 'TOSF', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
+  { id: 'anti-hazing', label: 'Anti-Hazing Law', title: 'Anti-Hazing Law (RA 11053)', badge: 'AH', href: '#/anti-hazing', documentTitle: 'Anti-Hazing Law (RA 11053) | CHED', icon: ShieldCheck },
 ]
+// The page shown when the URL has no #/<id> route.
+export const DEFAULT_VIEW_ID = DASHBOARD_VIEWS.find((view) => !view.hidden).id
 
 const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5' }
 
@@ -37,6 +42,54 @@ export function DefinitionNote({ children }) {
   return <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">{children}</p>
 }
 
+export function PageIntro({ eyebrow, title, titleId, description, aside = null }) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">{eyebrow}</p>
+        <h2 id={titleId} className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{title}</h2>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
+      </div>
+      {aside ? <p className="text-xs font-medium text-slate-500">{aside}</p> : null}
+    </div>
+  )
+}
+
+export function ErrorAlert({ title, message, onRetry }) {
+  return (
+    <div role="alert" className="mt-5 flex flex-col gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 shrink-0" size={20} aria-hidden="true" />
+        <div><p className="text-sm font-bold">{title}</p><p className="mt-1 text-sm text-red-700">{message}</p></div>
+      </div>
+      {onRetry ? <button type="button" onClick={onRetry} className="min-h-10 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200">Try again</button> : null}
+    </div>
+  )
+}
+
+export function DataTable({ rows, columns, caption }) {
+  const safeRows = Array.isArray(rows) ? rows : []
+  if (!safeRows.length) return <EmptyState compact />
+
+  return (
+    <div className="max-h-[380px] overflow-auto rounded-xl border border-slate-200">
+      <table className="min-w-full text-sm">
+        <caption className="sr-only">{caption}</caption>
+        <thead className="sticky top-0 z-10 bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
+          <tr>{columns.map((column) => <th key={column.key} scope="col" className={`border-b border-slate-200 px-3 py-2.5 ${column.num ? 'text-right' : ''}`}>{column.label}</th>)}</tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {safeRows.map((row, index) => (
+            <tr key={row.name || index} className="bg-white transition hover:bg-blue-50/50">
+              {columns.map((column) => <td key={column.key} className={`px-3 py-2.5 text-slate-700 ${column.num ? 'text-right font-semibold tabular-nums' : ''}`}>{column.render ? column.render(row) : row[column.key]}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function Select({ id, label, value, options, onChange, allLabel = 'All' }) {
   return (
     <label htmlFor={id} className="min-w-0">
@@ -61,7 +114,7 @@ function DashboardSwitcher({ activeView }) {
   return (
     <nav className="mt-4" aria-label="Dashboards">
       <div className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
-        {DASHBOARD_VIEWS.map((view) => {
+        {DASHBOARD_VIEWS.filter((view) => !view.hidden || view.id === activeView).map((view) => {
           const Icon = view.icon
           const active = view.id === activeView
           return (

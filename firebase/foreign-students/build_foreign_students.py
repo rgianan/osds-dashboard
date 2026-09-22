@@ -20,8 +20,6 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-import zipfile
-import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from math import asin, cos, radians, sin, sqrt
@@ -29,6 +27,9 @@ from pathlib import Path
 from statistics import median
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+from xlsx_reader import Workbook  # noqa: E402  (shared with firebase/reports)
+
 DEFAULT_OUT = HERE / "foreign-students.json"
 DEFAULT_COORDS = HERE / "ph-city-coordinates.json"
 
@@ -81,60 +82,8 @@ NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 USER_AGENT = "siap-dashboard-foreign-students-build/1.0 (+https://osds-dashboard.netlify.app)"
 OUTLIER_KM = 90
 
-XLSX_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-REL_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 
-
-# --- Workbook reading (streamed; the file is large) ---------------------------------
-
-def _column_index(ref):
-    index = 0
-    for char in re.match(r"[A-Z]+", ref).group(0):
-        index = index * 26 + ord(char) - 64
-    return index - 1
-
-
-def _shared_strings(archive):
-    if "xl/sharedStrings.xml" not in archive.namelist():
-        return []
-    strings = []
-    for _, element in ET.iterparse(archive.open("xl/sharedStrings.xml")):
-        if element.tag == f"{XLSX_NS}si":
-            strings.append("".join(text.text or "" for text in element.iter(f"{XLSX_NS}t")))
-            element.clear()
-    return strings
-
-
-def _sheet_paths(archive):
-    workbook = ET.parse(archive.open("xl/workbook.xml")).getroot()
-    rels = ET.parse(archive.open("xl/_rels/workbook.xml.rels")).getroot()
-    targets = {rel.get("Id"): rel.get("Target").lstrip("/") for rel in rels}
-    paths = {}
-    for sheet in workbook.find(f"{XLSX_NS}sheets"):
-        target = targets[sheet.get(REL_ID)]
-        paths[sheet.get("name")] = target if target.startswith("xl/") else f"xl/{target}"
-    return paths
-
-
-def _rows(archive, path, strings):
-    for _, element in ET.iterparse(archive.open(path)):
-        if element.tag != f"{XLSX_NS}row":
-            continue
-        row = {}
-        for cell in element.findall(f"{XLSX_NS}c"):
-            value = cell.find(f"{XLSX_NS}v")
-            if cell.get("t") == "inlineStr":
-                text = "".join(t.text or "" for t in cell.iter(f"{XLSX_NS}t"))
-            elif value is None:
-                continue
-            elif cell.get("t") == "s":
-                text = strings[int(value.text)]
-            else:
-                text = value.text
-            row[_column_index(cell.get("r"))] = text
-        element.clear()
-        yield row
-
+# --- Workbook reading -----------------------------------------------------------------
 
 def _header_key(text):
     return str(text or "").split("\n")[0].strip().lower()
@@ -157,10 +106,10 @@ def _resolve_columns(header_row):
     return resolved
 
 
-def _hei_reference(archive, sheets, strings):
-    if HEI_SHEET not in sheets:
+def _hei_reference(workbook):
+    if HEI_SHEET not in workbook.sheet_names:
         sys.exit(f"Sheet '{HEI_SHEET}' (the HEI list) is required to identify the HEI city and province columns.")
-    rows = _rows(archive, sheets[HEI_SHEET], strings)
+    rows = (cells for _, cells in workbook.rows(HEI_SHEET))
     header = next(rows, {})
     indexes = {key: next((i for i, h in header.items() if _clean(h) == name), None) for key, name in HEI_SHEET_HEADERS.items()}
     missing = [HEI_SHEET_HEADERS[key] for key, index in indexes.items() if index is None]
@@ -304,13 +253,11 @@ def _load_coordinates(path, cities, allow_network):
 # --- Build --------------------------------------------------------------------------
 
 def build(xlsx_path, out_path, coords_path, allow_network):
-    with zipfile.ZipFile(xlsx_path) as archive:
-        strings = _shared_strings(archive)
-        sheets = _sheet_paths(archive)
-        if DATA_SHEET not in sheets:
-            sys.exit(f"Sheet '{DATA_SHEET}' not found. Sheets: {', '.join(sheets)}")
-        reference = _hei_reference(archive, sheets, strings)
-        data_rows = _rows(archive, sheets[DATA_SHEET], strings)
+    with Workbook(xlsx_path) as workbook:
+        if DATA_SHEET not in workbook.sheet_names:
+            sys.exit(f"Sheet '{DATA_SHEET}' not found. Sheets: {', '.join(workbook.sheet_names)}")
+        reference = _hei_reference(workbook)
+        data_rows = (cells for _, cells in workbook.rows(DATA_SHEET))
         header_row = next(data_rows)
         rows = [row for row in data_rows if row]
 

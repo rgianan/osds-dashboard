@@ -53,6 +53,27 @@ Example: `...foreignStudentsApi?academicYear=2024-2025&nationality=Indian`
 
 Counts are enrollment records per academic year, so a student enrolled in several years is counted once per year when no academic year is selected.
 
+## Reports: TOSF Increase and Anti-Hazing Law
+
+The **TOSF Increase** (`#/tosf`) and **Anti-Hazing Law** (`#/anti-hazing`) views show summary tables from CHED report workbooks. They are stored in Firestore and served by the public, read-only `reportsApi` function.
+
+### Updating a report
+
+Run from `firebase/functions/`:
+
+```bash
+npm run build:report -- tosf-increase "path/to/tuition and other school fee increase.xlsx"
+npm run publish:report -- tosf-increase
+```
+
+Use `anti-hazing` with the RA 11053 workbook the same way. The build step (`firebase/reports/build_reports.py`) finds each table by its header row, so sheet names and column order can change. It reads a number followed by a note, such as `1- pending confirmation of CHEDRO`, as the number plus a note. It checks any `GRAND TOTAL` row against the rows and prints warnings for review. To add another report, describe its tables in `REPORTS` in that script and add a view for it in the frontend.
+
+Publishing stores a new version in `reports/{id}/versions/{version}`, points `reports/{id}.currentVersion` at it, and keeps the five most recent versions.
+
+### API
+
+`GET https://asia-southeast1-osds-dashboard.cloudfunctions.net/reportsApi` lists the published reports. `GET ...reportsApi?id=tosf-increase` (or `id=anti-hazing`) returns one report: its title, academic year when stated, and tables. Each table has `columns`, `rows` (`label`, `values`, and optional `notes`), and `totals`.
+
 ## Apps Script performance setup
 
 Set the optional `CACHE_SECONDS` Script Property to control normalized-row and response caching. The default is 600 seconds; 1800-3600 seconds is appropriate when the Sheet does not need near-real-time updates.

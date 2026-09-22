@@ -119,6 +119,38 @@ export function EndorsementMonths({ data }) {
   )
 }
 
+// Horizontal bars with several values per row, side by side or stacked.
+// series: [{ key, label, color }]; data rows: { name, [key]: number }
+export function MultiBars({ data, series, height = 360, stacked = false, labelWidth = 150, labelLimit = 24 }) {
+  const safeData = Array.isArray(data) ? data : []
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={safeData} layout="vertical" margin={{ top: 6, right: stacked ? 24 : 40, left: 0, bottom: 4 }} barGap={2} accessibilityLayer>
+        <CartesianGrid stroke={GRID_COLOR} strokeDasharray="3 3" horizontal={false} />
+        <XAxis type="number" allowDecimals={false} tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey="name" width={labelWidth} tickFormatter={(value) => shortLabel(value, labelLimit)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
+        <Tooltip formatter={(value, name) => [n(value), name]} contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#f8fafc' }} />
+        <Legend iconType="circle" wrapperStyle={{ color: AXIS_COLOR, fontSize: 11 }} />
+        {series.map((item, index) => (
+          <Bar
+            key={item.key}
+            dataKey={item.key}
+            name={item.label}
+            fill={item.color || COLORS[index % COLORS.length]}
+            stackId={stacked ? 'total' : undefined}
+            maxBarSize={stacked ? 22 : 14}
+            radius={stacked ? (index === series.length - 1 ? [0, 5, 5, 0] : 0) : [0, 4, 4, 0]}
+            isAnimationActive={!REDUCE_MOTION}
+            animationDuration={450}
+          >
+            {stacked ? null : <LabelList dataKey={item.key} position="right" formatter={(value) => n(value)} fill="#475569" fontSize={10} />}
+          </Bar>
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
 export function StackedHeiCountryBars({ data, countries }) {
   const safeData = Array.isArray(data) ? data : []
   const activeCountries = (Array.isArray(countries) ? countries : []).filter((country) => safeData.some((row) => Number(row[country]) > 0))

@@ -3,9 +3,12 @@ export const GAS_API_URL = import.meta.env.VITE_GAS_WEB_APP_URL || ''
 export const API_URL = FIREBASE_API_URL || GAS_API_URL
 export const DASHBOARD_TOKEN = import.meta.env.VITE_DASHBOARD_TOKEN || ''
 const DASHBOARD_API_PATH = /\/dashboardApi\/?$/
-// Defaults to the foreignStudentsApi function next to dashboardApi in the same Firebase project.
-export const FOREIGN_STUDENTS_API_URL = import.meta.env.VITE_FOREIGN_STUDENTS_API_URL
-  || (DASHBOARD_API_PATH.test(FIREBASE_API_URL) ? FIREBASE_API_URL.replace(DASHBOARD_API_PATH, '/foreignStudentsApi') : '')
+// The public read-only functions are deployed next to dashboardApi in the same Firebase project.
+function siblingFunctionUrl(name) {
+  return DASHBOARD_API_PATH.test(FIREBASE_API_URL) ? FIREBASE_API_URL.replace(DASHBOARD_API_PATH, `/${name}`) : ''
+}
+export const FOREIGN_STUDENTS_API_URL = import.meta.env.VITE_FOREIGN_STUDENTS_API_URL || siblingFunctionUrl('foreignStudentsApi')
+export const REPORTS_API_URL = import.meta.env.VITE_REPORTS_API_URL || siblingFunctionUrl('reportsApi')
 const RETRY_DELAYS_MS = [1500, 4000]
 
 const inFlightRequests = new Map()
@@ -58,22 +61,31 @@ export async function postJson(payload) {
   }
 }
 
-// Loads every foreign-students count once; the page filters in the browser.
-// Network failures and 429/5xx responses are retried, since Cloud Run can briefly
-// reject requests while an instance starts.
-export async function getForeignStudentsCube() {
-  if (!FOREIGN_STUDENTS_API_URL) throw new Error('Missing foreign students API URL. Set VITE_FOREIGN_STUDENTS_API_URL or VITE_FIREBASE_API_URL.')
+// GET a JSON response with { ok: true }. Network failures and 429/5xx responses
+// are retried, since Cloud Run can briefly reject requests while an instance starts.
+async function getJsonWithRetry(url) {
   for (let attempt = 0; ; attempt++) {
     let permanent = false
     try {
-      const res = await fetch(`${FOREIGN_STUDENTS_API_URL}?format=cube`)
+      const res = await fetch(url)
       const data = await res.json().catch(() => null)
       if (res.ok && data?.ok) return data
       permanent = res.status >= 400 && res.status < 500 && res.status !== 429
-      throw new Error(data?.message || `Foreign students request failed with HTTP ${res.status}.`)
+      throw new Error(data?.message || `Request failed with HTTP ${res.status}.`)
     } catch (error) {
       if (permanent || attempt >= RETRY_DELAYS_MS.length) throw error
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]))
     }
   }
+}
+
+// Loads every foreign-students count once; the page filters in the browser.
+export function getForeignStudentsCube() {
+  if (!FOREIGN_STUDENTS_API_URL) return Promise.reject(new Error('Missing foreign students API URL. Set VITE_FOREIGN_STUDENTS_API_URL or VITE_FIREBASE_API_URL.'))
+  return getJsonWithRetry(`${FOREIGN_STUDENTS_API_URL}?format=cube`)
+}
+
+export function getReport(id) {
+  if (!REPORTS_API_URL) return Promise.reject(new Error('Missing reports API URL. Set VITE_REPORTS_API_URL or VITE_FIREBASE_API_URL.'))
+  return getJsonWithRetry(`${REPORTS_API_URL}?id=${encodeURIComponent(id)}`)
 }

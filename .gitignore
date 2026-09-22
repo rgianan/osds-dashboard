@@ -16,4 +16,6 @@ firebase/functions/.env.*
 *.xlsx
 *.xls
 firebase/foreign-students/foreign-students.json
+firebase/reports/*.json
+__pycache__/
 

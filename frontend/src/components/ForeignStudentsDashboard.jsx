@@ -1,9 +1,9 @@
 import { lazy, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { getForeignStudentsCube } from '../lib/api.js'
-import { n } from '../lib/format.js'
+import { n, shortRegionName } from '../lib/format.js'
 import { KpiCard, Panel } from './Panel.jsx'
-import { DefinitionNote, EmptyState, FilterBar, Header, Visualization } from './DashboardShell.jsx'
+import { DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, Visualization } from './DashboardShell.jsx'
 
 const HorizontalBars = lazy(() => import('./Charts.jsx').then((module) => ({ default: module.HorizontalBars })))
 const PhilippinesCityMap = lazy(() => import('./PhilippinesCityMap.jsx').then((module) => ({ default: module.PhilippinesCityMap })))
@@ -12,18 +12,6 @@ const DEFAULT_FILTERS = { academicYear: '', nationality: '', region: '', sex: ''
 // Position of each field inside a data cell: [academicYear, region, sex, nationality, city, count]
 const CELL = { academicYear: 0, region: 1, sex: 2, nationality: 3, city: 4, count: 5 }
 const TOP_NATIONALITIES = 15
-const REGION_ABBREVIATIONS = [
-  ['NATIONAL CAPITAL REGION', 'NCR'],
-  ['CORDILLERA ADMINISTRATIVE REGION', 'CAR'],
-  ['BANGSAMORO AUTONOMOUS REGION IN MUSLIM MINDANAO', 'BARMM'],
-  ['AUTONOMOUS REGION IN MUSLIM MINDANAO', 'ARMM'],
-  ['NEGROS ISLAND REGION', 'NIR'],
-]
-
-function regionLabel(region) {
-  const match = REGION_ABBREVIATIONS.find(([full]) => region.toUpperCase().includes(full))
-  return match ? region.toUpperCase().replace(match[0], match[1]) : region
-}
 
 function barHeight(rows) {
   return Math.max(220, rows * 30 + 40)
@@ -59,7 +47,7 @@ function summarize({ dimensions, cells }, filters) {
   const isMapped = (city) => city.lat != null && city.lng != null
   return {
     total,
-    regions: ranked(dimensions.region, byRegion, regionLabel),
+    regions: ranked(dimensions.region, byRegion, shortRegionName),
     nationalities: nationalities.slice(0, TOP_NATIONALITIES),
     nationalityCount: nationalities.length,
     cities: cities.filter(isMapped),
@@ -125,15 +113,7 @@ export default function ForeignStudentsDashboard() {
             <p className="text-xs font-medium text-slate-500">{activeFilterCount ? `View refined by ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'All records included'}</p>
           </div>
 
-          {error ? (
-            <div role="alert" className="mt-5 flex flex-col gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 shrink-0" size={20} aria-hidden="true" />
-                <div><p className="text-sm font-bold">Foreign students data could not be loaded</p><p className="mt-1 text-sm text-red-700">{error}</p></div>
-              </div>
-              <button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="min-h-10 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200">Try again</button>
-            </div>
-          ) : null}
+          {error ? <ErrorAlert title="Foreign students data could not be loaded" message={error} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} /> : null}
 
           {!data && !error ? (
             <div className="mt-5 grid gap-5" role="status" aria-label="Loading foreign students data">

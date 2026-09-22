@@ -15,7 +15,9 @@
     "rollback": "node src/rollback.js",
     "set-admin": "node src/set-admin.js",
     "build:foreign-students": "python ../foreign-students/build_foreign_students.py",
-    "publish:foreign-students": "node src/publish-foreign-students.js"
+    "publish:foreign-students": "node src/publish-foreign-students.js",
+    "build:report": "python ../reports/build_reports.py",
+    "publish:report": "node src/publish-report.js"
   },
   "dependencies": {
     "csv-parse": "7.0.0",
