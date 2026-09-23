@@ -65,7 +65,7 @@ npm run publish:foreign-students
 
 The build step writes `firebase/foreign-students/foreign-students.json`. It:
 
-- reads only academic year, region, sex, nationality, and the HEI's city and province. Birth-date, address, passport, and ACR columns are never written out. Keep the workbook out of the repository; `*.xlsx` is gitignored.
+- reads only academic year, region, sex, nationality, HEI type, and the HEI's city and province. Birth-date, address, passport, and ACR columns are never written out. Keep the workbook out of the repository; `*.xlsx` is gitignored.
 - finds the HEI city and province columns by matching their values against the HEI list (`Sheet2`), so mislabeled headers don't matter.
 - combines nationality spellings (for example `INDIAN` and `Indian`) through the rules in `NATIONALITY_SYNONYMS`.
 - places HEI cities on the map using `firebase/foreign-students/ph-city-coordinates.json`. New cities are geocoded once through OpenStreetMap Nominatim, which receives only city and province names. Check any entry the script reports for review before publishing.
@@ -79,7 +79,7 @@ The publish step stores the summary as a new version in `foreignStudentsDatasets
 | Query parameter | Values |
 | --- | --- |
 | `format` | `summary` (default): totals by academic year, region, sex, nationality, and city. `cube`: every count cell. `dimensions`: the valid filter values. |
-| `academicYear`, `region`, `sex`, `nationality` | Optional filters, matched case-insensitively against `format=dimensions`. |
+| `academicYear`, `region`, `sex`, `nationality`, `heiType`, `city`, `province` | Optional filters, matched case-insensitively against `format=dimensions`. |
 
 Example: `...foreignStudentsApi?academicYear=2024-2025&nationality=Indian`
 

@@ -5,8 +5,8 @@ Usage (from firebase/functions):
     npm run publish:foreign-students
 
 The workbook can contain personal data (dates of birth, addresses). This script
-reads only academic year, region, sex, nationality, and the HEI's city and
-province, and writes counts per combination of those fields to
+reads only academic year, region, sex, nationality, HEI type, and the HEI's
+city and province, and writes counts per combination of those fields to
 foreign-students.json next to this script. No row-level record is written.
 
 HEI cities are geocoded once through OpenStreetMap Nominatim (city and province
@@ -39,6 +39,7 @@ COLUMNS = {
     "region": ("Region", 0),
     "sex": ("Sex", 0),
     "nationality": ("Nationality", 0),
+    "hei_type": ("HEI Type", 0),
 }
 # The HEI city and province columns are lookups from the HEI list, and their
 # headers have been mislabeled in past versions of the workbook, so they are
@@ -262,15 +263,17 @@ def build(xlsx_path, out_path, coords_path, allow_network):
         rows = [row for row in data_rows if row]
 
     columns = _resolve_columns(header_row)
+    # Columns O and P have had their City/Province labels swapped in source
+    # versions, so identify each by matching its contents to the HEI registry.
     columns["hei_city"] = _best_match_column(rows, header_row, reference["city"], "city")
     columns["hei_province"] = _best_match_column(rows, header_row, reference["province"], "province")
-
     records = [{field: _clean(row.get(index)) for field, index in columns.items()} for row in rows]
     records = [record for record in records if any(record.values())]
     raw_nationalities = Counter(record["nationality"] for record in records)
     nationality = _nationality_resolver(raw_nationalities)
     counts = Counter(
-        (r["academic_year"], r["region"], _sex(r["sex"]), nationality(r["nationality"]), (r["hei_city"], r["hei_province"]))
+        (r["academic_year"], r["region"], _sex(r["sex"]), nationality(r["nationality"]), r["hei_type"] or NOT_SPECIFIED,
+         r["hei_city"], r["hei_province"] or NOT_SPECIFIED)
         for r in records
     )
 
@@ -278,32 +281,37 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     regions = sorted({k[1] for k in counts}, key=_region_sort_key)
     sexes = _last({k[2] for k in counts}, NOT_SPECIFIED)
     nationalities = _last({k[3] for k in counts}, "Other", NOT_SPECIFIED)
-    cities = sorted({k[4] for k in counts})
+    hei_types = _last({k[4] for k in counts}, NOT_SPECIFIED)
+    provinces = _last({k[6] for k in counts}, NOT_SPECIFIED)
+    cities = sorted({(k[5], k[6]) for k in counts})
     coords = _load_coordinates(coords_path, cities, allow_network)
 
     index = {name: {value: i for i, value in enumerate(values)} for name, values in
-             (("y", years), ("r", regions), ("s", sexes), ("n", nationalities), ("c", cities))}
+             (("y", years), ("r", regions), ("s", sexes), ("n", nationalities), ("h", hei_types),
+              ("c", cities), ("p", provinces))}
     output = {
         "meta": {
             "sourceFile": Path(xlsx_path).name,
             "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "totalRecords": len(records),
             "cityBasis": "HEI city",
-            "cellFields": ["academicYear", "region", "sex", "nationality", "city", "count"],
+            "cellFields": ["academicYear", "region", "sex", "nationality", "heiType", "city", "province", "count"],
         },
         "dimensions": {
             "academicYear": years,
             "region": regions,
             "sex": sexes,
             "nationality": nationalities,
+            "heiType": hei_types,
+            "province": provinces,
             "city": [
                 {"name": c, "province": p, "lat": coords.get(f"{c}|{p}", {}).get("lat"), "lng": coords.get(f"{c}|{p}", {}).get("lng")}
                 for c, p in cities
             ],
         },
         "cells": [
-            [index["y"][y], index["r"][r], index["s"][s], index["n"][n], index["c"][c], count]
-            for (y, r, s, n, c), count in sorted(counts.items(), key=lambda kv: -kv[1])
+            [index["y"][y], index["r"][r], index["s"][s], index["n"][n], index["h"][h], index["c"][(c, p)], index["p"][p], count]
+            for (y, r, s, n, h, c, p), count in sorted(counts.items(), key=lambda kv: -kv[1])
         ],
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -311,10 +319,11 @@ def build(xlsx_path, out_path, coords_path, allow_network):
 
     city_set = set(cities)
     review = {k: v for k, v in coords.items() if v.get("needsReview") and tuple(k.split("|")) in city_set}
-    unmapped = sum(count for (_, _, _, _, c), count in counts.items() if coords.get(f"{c[0]}|{c[1]}", {}).get("lat") is None)
+    unmapped = sum(count for (_, _, _, _, _, c, p), count in counts.items() if coords.get(f"{c}|{p}", {}).get("lat") is None)
     merged = sum(1 for raw in raw_nationalities if nationality(raw) != raw)
     print(f"Wrote {out_path.name}: {len(records):,} records -> {len(counts):,} count cells, {out_path.stat().st_size / 1024:.0f} KB")
-    print(f"Dimensions: {len(years)} years, {len(regions)} regions, {len(sexes)} sexes, {len(nationalities)} nationalities, {len(cities)} cities")
+    print(f"Dimensions: {len(years)} years, {len(regions)} regions, {len(sexes)} sexes, {len(nationalities)} nationalities, "
+          f"{len(hei_types)} HEI types, {len(cities)} city/province locations, {len(provinces)} provinces")
     print(f"Records at cities without coordinates: {unmapped:,}")
     print(f"Nationality spellings merged: {merged} ({len(raw_nationalities)} raw -> {len(nationalities)} labels)")
     if review:

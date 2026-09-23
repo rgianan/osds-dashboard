@@ -67,7 +67,7 @@ export const siapApi = onRequest({ timeoutSeconds: 120, memory: '512MiB', cors: 
   }
 })
 
-// Public, read-only counts for sharing: GET ?academicYear=&region=&sex=&nationality=&format=summary|cube|dimensions
+// Public, read-only counts: GET filters include academicYear, region, sex, nationality, heiType, city, and province.
 export const foreignStudentsApi = onRequest({ timeoutSeconds: 30, memory: '256MiB', cors: false, invoker: 'public', maxInstances: 5 }, async (request, response) => {
   response.set('Access-Control-Allow-Origin', '*')
   response.set('Access-Control-Allow-Methods', 'GET, OPTIONS')

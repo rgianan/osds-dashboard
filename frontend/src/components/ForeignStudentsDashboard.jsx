@@ -8,9 +8,7 @@ import { DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, Visualizatio
 const HorizontalBars = lazy(() => import('./Charts.jsx').then((module) => ({ default: module.HorizontalBars })))
 const PhilippinesCityMap = lazy(() => import('./PhilippinesCityMap.jsx').then((module) => ({ default: module.PhilippinesCityMap })))
 
-const DEFAULT_FILTERS = { academicYear: '', nationality: '', region: '', sex: '' }
-// Position of each field inside a data cell: [academicYear, region, sex, nationality, city, count]
-const CELL = { academicYear: 0, region: 1, sex: 2, nationality: 3, city: 4, count: 5 }
+const DEFAULT_FILTERS = { academicYear: '', nationality: '', region: '', sex: '', heiType: '', city: '', province: '' }
 const TOP_NATIONALITIES = 15
 
 function barHeight(rows) {
@@ -24,22 +22,23 @@ function ranked(names, counts, label = (name) => name) {
     .sort((a, b) => b.totalStudents - a.totalStudents || a.name.localeCompare(b.name))
 }
 
-function summarize({ dimensions, cells }, filters) {
+function summarize({ meta, dimensions, cells }, filters) {
+  const positions = Object.fromEntries(meta.cellFields.map((field, index) => [field, index]))
   const active = Object.keys(DEFAULT_FILTERS)
     .filter((key) => filters[key])
-    .map((key) => [CELL[key], dimensions[key].indexOf(filters[key])])
+    .map((key) => [positions[key], new Set(dimensions[key].flatMap((option, index) => ((key === 'city' ? option.name : option) === filters[key] ? [index] : [])))])
   const byRegion = new Array(dimensions.region.length).fill(0)
   const byNationality = new Array(dimensions.nationality.length).fill(0)
   const byCity = new Array(dimensions.city.length).fill(0)
   let total = 0
 
-  for (const cell of cells) {
-    if (active.some(([position, index]) => cell[position] !== index)) continue
-    const count = cell[CELL.count]
+  for (const row of cells) {
+    if (active.some(([position, indexes]) => !indexes.has(row[position]))) continue
+    const count = row[positions.count]
     total += count
-    byRegion[cell[CELL.region]] += count
-    byNationality[cell[CELL.nationality]] += count
-    byCity[cell[CELL.city]] += count
+    byRegion[row[positions.region]] += count
+    byNationality[row[positions.nationality]] += count
+    byCity[row[positions.city]] += count
   }
 
   const nationalities = ranked(dimensions.nationality, byNationality)
@@ -79,6 +78,9 @@ export default function ForeignStudentsDashboard() {
     { key: 'nationality', label: 'Nationality', allLabel: 'All nationalities', options: data?.dimensions.nationality || [] },
     { key: 'region', label: 'Region', allLabel: 'All regions', options: data?.dimensions.region || [] },
     { key: 'sex', label: 'Sex', allLabel: 'All', options: data?.dimensions.sex || [] },
+    { key: 'heiType', label: 'HEI type', allLabel: 'All HEI types', options: data?.dimensions.heiType || [] },
+    { key: 'city', label: 'City', allLabel: 'All cities', options: [...new Set(data?.dimensions.city?.map((city) => city.name) || [])].sort() },
+    { key: 'province', label: 'Province', allLabel: 'All provinces', options: data?.dimensions.province || [] },
   ]
   const totalHint = filters.academicYear
     ? `Enrolled in academic year ${filters.academicYear}`
@@ -108,7 +110,7 @@ export default function ForeignStudentsDashboard() {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">Foreign student enrollment</p>
               <h2 id="foreign-students-title" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Foreign students in Philippine HEIs</h2>
-              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">Enrollment records reported by higher education institutions, by academic year, nationality, region, and sex.</p>
+              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">Enrollment records reported by higher education institutions, with filters for academic year, nationality, region, sex, HEI type, city, and province.</p>
             </div>
             <p className="text-xs font-medium text-slate-500">{activeFilterCount ? `View refined by ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'All records included'}</p>
           </div>
@@ -129,7 +131,7 @@ export default function ForeignStudentsDashboard() {
               </div>
 
               {summary.total === 0 ? (
-                <EmptyState title="No foreign students match these filters" message="Try another academic year, nationality, region, or sex." />
+                <EmptyState title="No foreign students match these filters" message="Change or clear one or more filters." />
               ) : (
                 <>
                   <div className="grid gap-5 xl:grid-cols-2">

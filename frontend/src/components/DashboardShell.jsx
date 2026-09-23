@@ -11,7 +11,7 @@ export const DASHBOARD_VIEWS = [
 // The page shown when the URL has no #/<id> route.
 export const DEFAULT_VIEW_ID = DASHBOARD_VIEWS.find((view) => !view.hidden).id
 
-const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5' }
+const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-3 xl:grid-cols-6', 7: 'lg:grid-cols-4 xl:grid-cols-7' }
 
 export function EmptyState({ title = 'No data for this view', message = 'Try broadening or clearing the selected filters.', compact = false }) {
   return (
