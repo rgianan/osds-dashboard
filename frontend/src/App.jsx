@@ -11,7 +11,6 @@ import {
   GraduationCap,
   Lightbulb,
   TimerReset,
-  UploadCloud,
   Users,
 } from 'lucide-react'
 import { postJson } from './lib/api.js'
@@ -26,7 +25,6 @@ const HorizontalBars = lazy(() => loadCharts().then((module) => ({ default: modu
 const MonthLine = lazy(() => loadCharts().then((module) => ({ default: module.MonthLine })))
 const StackedHeiCountryBars = lazy(() => loadCharts().then((module) => ({ default: module.StackedHeiCountryBars })))
 const RouteMap = lazy(() => import('./components/RouteMap.jsx').then((module) => ({ default: module.RouteMap })))
-const DataImport = lazy(() => import('./components/DataImport.jsx'))
 // Every dashboard except SIAP loads on demand when its view is opened.
 const VIEW_COMPONENTS = {
   'foreign-students': lazy(() => import('./components/ForeignStudentsDashboard.jsx')),
@@ -40,9 +38,8 @@ const TABS = [
   { id: 'timeline', label: 'Timeline', title: 'Internship timeline', description: 'Upcoming completions and monthly internship movement.', icon: TimerReset },
   { id: 'hei', label: 'HEI risk', title: 'HEI concentration risk', description: 'Institution participation, destination mix, and concentration indicators.', icon: GraduationCap },
   { id: 'geo', label: 'Geography', title: 'Destinations and host organizations', description: 'Where interns go and which organizations receive them.', icon: Globe2 },
-  { id: 'admin', label: 'Data import', title: 'Dataset administration', description: 'Validate and activate a new SIAP dataset from a protected CSV upload.', icon: UploadCloud },
 ]
-const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography', admin: null }
+const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography' }
 const EMPTY_DASHBOARD = { overview: null, timeline: null, hei: null, geography: null }
 
 function useDebouncedFilters(filters, delay = 300) {
@@ -432,7 +429,6 @@ function SiapDashboard() {
             {!filtersPending && data[section] && tab === 'timeline' ? <Timeline data={data} /> : null}
             {!filtersPending && data[section] && tab === 'hei' ? <HeiRisk data={data} /> : null}
             {!filtersPending && data[section] && tab === 'geo' ? <Geography data={data} /> : null}
-            {tab === 'admin' ? <Suspense fallback={<div className="skeleton h-80 rounded-2xl" />}><DataImport /></Suspense> : null}
             {section && !loading && !error && !data[section] ? <EmptyState title="This section is not available" message="Refresh the dashboard or adjust the current filters." /> : null}
           </div>
         </section>
