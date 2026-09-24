@@ -22,3 +22,10 @@ test('builds all section shapes', () => {
   assert.equal(buildGeography(rows).routes.length, 1)
   assert.deepEqual(buildOptions(rows).years, ['2026', '2025'])
 })
+
+test('reports selection totals so shares are not divided by the charted rows', () => {
+  const hei = buildHeiRisk(rows)
+  assert.equal(hei.totalInterns, 3)
+  assert.equal(hei.totalHeis, 2)
+  assert.equal(buildGeography(rows).totalInterns, 3)
+})

@@ -18,6 +18,24 @@ export function compact(value) {
   return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(finiteNumber(value))
 }
 
+// Most SIAP programs begin with the same words, so a truncated axis label showed
+// "Bachelor of Science in ..." for all of them. Shorten the degree, keep the subject.
+const PROGRAM_PREFIXES = [
+  [/^bachelor of science in\s+/i, 'BS '],
+  [/^bachelor of arts in\s+/i, 'BA '],
+  [/^bachelor of secondary education(\s+major in)?\s*/i, 'BSEd '],
+  [/^bachelor of elementary education(\s+major in)?\s*/i, 'BEEd '],
+  [/^master of science in\s+/i, 'MS '],
+  [/^master of arts in\s+/i, 'MA '],
+  [/^doctor of philosophy in\s+/i, 'PhD '],
+]
+
+export function shortProgramName(program) {
+  const text = String(program || '').trim()
+  const match = PROGRAM_PREFIXES.find(([pattern]) => pattern.test(text))
+  return match ? `${match[1]}${text.replace(match[0], '')}`.trim() : text
+}
+
 // BARMM must come before ARMM, which is part of its name.
 const REGION_ABBREVIATIONS = [
   [/national capital region/i, 'NCR'],

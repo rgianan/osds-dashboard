@@ -15,8 +15,12 @@ const SECTION_FIELDS = {
   geography: ['endorsementNo', 'country', 'host', 'fromCity', 'toCity', 'originLat', 'originLng', 'destLat', 'destLng'],
 }
 
+// Bump when a section payload's shape changes, so responses cached by older code
+// (still valid for up to CACHE_SECONDS) are not served with missing fields.
+const CACHE_SCHEMA = 2
+
 function cacheId(section, filters, includeOptions) {
-  return createHash('sha256').update(JSON.stringify({ section, filters, includeOptions })).digest('hex')
+  return createHash('sha256').update(JSON.stringify({ schema: CACHE_SCHEMA, section, filters, includeOptions })).digest('hex')
 }
 
 function formattedTimestamp(value) {

@@ -37,6 +37,12 @@ function shortLabel(value, limit = 24) {
   return text.length > limit ? `${text.slice(0, limit - 1)}…` : text
 }
 
+// Legend text defaults to each series' color, which fails contrast for light
+// series such as amber; keep the colored dot and write the label in slate.
+function legendText(value) {
+  return <span style={{ color: '#334155' }}>{value}</span>
+}
+
 function tooltipFormatter(value, name) {
   const readableName = String(name || '').replace(/([A-Z])/g, ' $1').replace(/^./, (character) => character.toUpperCase())
   return [n(value), readableName]
@@ -64,20 +70,21 @@ export function Donut({ data, valueKey = 'totalInterns', nameKey = 'name' }) {
           {safeData.map((item, index) => <Cell key={`${item[nameKey] || 'slice'}-${index}`} fill={COLORS[index % COLORS.length]} />)}
         </Pie>
         <Tooltip formatter={tooltipFormatter} contentStyle={TOOLTIP_STYLE} />
-        <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ color: AXIS_COLOR, fontSize: 11, paddingTop: 8 }} />
+        <Legend verticalAlign="bottom" iconType="circle" formatter={legendText} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
       </PieChart>
     </ResponsiveContainer>
   )
 }
 
-export function HorizontalBars({ data, valueKey = 'totalInterns', height = 320, color = '#2563eb', labelWidth = 150, labelLimit = 24 }) {
+// tickFormat shortens the axis label only; the tooltip still shows the full name.
+export function HorizontalBars({ data, valueKey = 'totalInterns', height = 320, color = '#2563eb', labelWidth = 150, labelLimit = 24, tickFormat = (value) => value }) {
   const safeData = Array.isArray(data) ? data : []
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={safeData} layout="vertical" margin={{ top: 6, right: 48, left: 0, bottom: 4 }} accessibilityLayer>
         <CartesianGrid stroke={GRID_COLOR} strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" tickFormatter={compact} tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis type="category" dataKey={label} width={labelWidth} tickFormatter={(value) => shortLabel(value, labelLimit)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
+        <YAxis type="category" dataKey={label} width={labelWidth} tickFormatter={(value) => shortLabel(tickFormat(value), labelLimit)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip formatter={tooltipFormatter} contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#f8fafc' }} />
         <Bar dataKey={valueKey} radius={[0, 6, 6, 0]} fill={color} maxBarSize={26} isAnimationActive={!REDUCE_MOTION} animationDuration={450}>
           <LabelList dataKey={valueKey} position="right" formatter={(value) => n(value)} fill="#475569" fontSize={11} />
@@ -96,7 +103,7 @@ export function MonthLine({ data }) {
         <XAxis dataKey="yearMonth" tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={24} />
         <YAxis allowDecimals={false} tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip formatter={tooltipFormatter} contentStyle={TOOLTIP_STYLE} />
-        <Legend iconType="circle" wrapperStyle={{ color: AXIS_COLOR, fontSize: 11 }} />
+        <Legend iconType="circle" formatter={legendText} wrapperStyle={{ fontSize: 11 }} />
         <Line name="Intern starts" type="monotone" dataKey="internStarts" stroke="#2563eb" strokeWidth={3} dot={false} activeDot={{ r: 5 }} isAnimationActive={!REDUCE_MOTION} animationDuration={500} />
         <Line name="Intern completions" type="monotone" dataKey="internEnds" stroke="#d97706" strokeWidth={3} dot={false} activeDot={{ r: 5 }} isAnimationActive={!REDUCE_MOTION} animationDuration={500} />
       </LineChart>
@@ -130,7 +137,7 @@ export function MultiBars({ data, series, height = 360, stacked = false, labelWi
         <XAxis type="number" allowDecimals={false} tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" width={labelWidth} tickFormatter={(value) => shortLabel(value, labelLimit)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip formatter={(value, name) => [n(value), name]} contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#f8fafc' }} />
-        <Legend iconType="circle" wrapperStyle={{ color: AXIS_COLOR, fontSize: 11 }} />
+        <Legend iconType="circle" formatter={legendText} wrapperStyle={{ fontSize: 11 }} />
         {series.map((item, index) => (
           <Bar
             key={item.key}
@@ -161,7 +168,7 @@ export function StackedHeiCountryBars({ data, countries }) {
         <XAxis type="number" domain={[0, 1]} ticks={[0, 0.25, 0.5, 0.75, 1]} tickFormatter={(value) => `${Math.round(value * 100)}%`} tick={{ fill: AXIS_COLOR, fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" width={150} tickFormatter={(value) => shortLabel(value)} tick={{ fill: '#334155', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip formatter={tooltipFormatter} contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#f8fafc' }} />
-        <Legend iconType="circle" wrapperStyle={{ color: AXIS_COLOR, fontSize: 11 }} />
+        <Legend iconType="circle" formatter={legendText} wrapperStyle={{ fontSize: 11 }} />
         {activeCountries.map((country, index) => <Bar key={country} dataKey={country} stackId="country" fill={COLORS[index % COLORS.length]} isAnimationActive={!REDUCE_MOTION} animationDuration={450} />)}
       </BarChart>
     </ResponsiveContainer>

@@ -31,7 +31,7 @@ export function Visualization({ children, data, height = 280, label, emptyTitle 
 
   return (
     <div role="img" aria-label={label}>
-      <Suspense fallback={<div className="skeleton flex items-center justify-center rounded-xl text-sm font-medium text-slate-500" style={{ height }}>Loading visualization...</div>}>
+      <Suspense fallback={<div className="skeleton flex items-center justify-center rounded-xl text-sm font-medium text-slate-600" style={{ height }}>Loading visualization...</div>}>
         {children}
       </Suspense>
     </div>
@@ -42,15 +42,16 @@ export function DefinitionNote({ children }) {
   return <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">{children}</p>
 }
 
-export function PageIntro({ eyebrow, title, titleId, description, aside = null }) {
+// One compact line above the data: the header already carries the page title, so the
+// section name stays modest and the description is a single sentence.
+export function PageIntro({ title, titleId, description, aside = null }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">{eyebrow}</p>
-        <h2 id={titleId} className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{title}</h2>
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+      <div className="flex min-w-0 flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-3">
+        <h2 id={titleId} className="shrink-0 text-base font-semibold text-slate-950">{title}</h2>
+        <p className="text-sm leading-6 text-slate-600">{description}</p>
       </div>
-      {aside ? <p className="text-xs font-medium text-slate-500">{aside}</p> : null}
+      {aside ? <p className="shrink-0 text-xs font-medium text-slate-600">{aside}</p> : null}
     </div>
   )
 }
@@ -112,8 +113,11 @@ function Select({ id, label, value, options, onChange, allLabel = 'All' }) {
 
 function DashboardSwitcher({ activeView }) {
   return (
-    <nav className="mt-4" aria-label="Dashboards">
-      <div className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
+    // Below xl the switcher wraps onto its own row under the title; from xl it sits
+    // between the title and the status, which saves a row above the first chart.
+    <nav className="order-last min-w-0 sm:basis-full xl:order-none xl:basis-auto" aria-label="Dashboards">
+      {/* A 2x2 grid on phones keeps every dashboard visible; a single row from sm up. */}
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 sm:inline-flex sm:max-w-full sm:overflow-x-auto">
         {DASHBOARD_VIEWS.filter((view) => !view.hidden || view.id === activeView).map((view) => {
           const Icon = view.icon
           const active = view.id === activeView
@@ -122,7 +126,7 @@ function DashboardSwitcher({ activeView }) {
               key={view.id}
               href={view.href}
               aria-current={active ? 'page' : undefined}
-              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${active ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'}`}
+              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-1 text-center text-sm font-semibold leading-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:min-h-9 sm:shrink-0 sm:justify-start sm:py-0 ${active ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'}`}
             >
               <Icon size={16} aria-hidden="true" /> {view.label}
             </a>
@@ -152,7 +156,7 @@ export function Header({ activeView, title, statusLabel, statusValue, onRefresh,
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className={`mx-auto max-w-[1600px] px-4 pt-5 sm:px-6 lg:px-8 ${tabs ? '' : 'pb-4'}`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between xl:flex-nowrap">
           <div className="flex min-w-0 items-center gap-3.5">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#102a43] text-[11px] font-black tracking-wide text-white shadow-sm">{badge}</div>
             <div className="min-w-0">
@@ -160,9 +164,10 @@ export function Header({ activeView, title, statusLabel, statusValue, onRefresh,
               <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
             </div>
           </div>
+          <DashboardSwitcher activeView={activeView} />
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <div className="min-w-0 text-left sm:text-right" aria-live="polite">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{statusLabel}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">{statusLabel}</p>
               <p className="truncate text-xs font-medium text-slate-600">{statusValue}</p>
             </div>
             {showRefresh ? <button
@@ -177,8 +182,6 @@ export function Header({ activeView, title, statusLabel, statusValue, onRefresh,
             </button> : null}
           </div>
         </div>
-
-        <DashboardSwitcher activeView={activeView} />
 
         {tabs ? (
           <nav className="mt-3 -mb-px overflow-x-auto" aria-label="Dashboard sections">
@@ -217,7 +220,7 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]" aria-labelledby="filters-title">
-      <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-5">
+      <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-5 lg:min-h-12">
         <div className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Filter size={16} aria-hidden="true" /></span>
           <div>
@@ -237,7 +240,7 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
         </div>
       </div>
 
-      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block`}>
+      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block lg:py-3`}>
         <fieldset>
           <legend className="sr-only">Dashboard filters</legend>
           <div className={`grid gap-3 sm:grid-cols-2 ${LG_GRID_COLUMNS[fields.length] || 'lg:grid-cols-5'}`}>

@@ -14,9 +14,9 @@ import {
   Users,
 } from 'lucide-react'
 import { postJson } from './lib/api.js'
-import { n } from './lib/format.js'
+import { n, shortProgramName } from './lib/format.js'
 import { KpiCard, Panel } from './components/Panel.jsx'
-import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, FilterBar, Header, Visualization } from './components/DashboardShell.jsx'
+import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, FilterBar, Header, PageIntro, Visualization } from './components/DashboardShell.jsx'
 
 const loadCharts = () => import('./components/Charts.jsx')
 const Donut = lazy(() => loadCharts().then((module) => ({ default: module.Donut })))
@@ -57,14 +57,11 @@ function SectionIntro({ tab, filters }) {
   const item = TABS.find((candidate) => candidate.id === tab)
   const activeFilters = Object.values(filters).filter(Boolean).length
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">SIAP decision support</p>
-        <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{item.title}</h2>
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{item.description}</p>
-      </div>
-      <p className="text-xs font-medium text-slate-500">{tab === 'admin' ? 'Administrator-only workflow' : activeFilters ? `View refined by ${activeFilters} filter${activeFilters === 1 ? '' : 's'}` : 'All records included'}</p>
-    </div>
+    <PageIntro
+      title={item.title}
+      description={item.description}
+      aside={activeFilters ? `View refined by ${activeFilters} filter${activeFilters === 1 ? '' : 's'}` : 'All records included'}
+    />
   )
 }
 
@@ -85,7 +82,7 @@ function InsightSummary({ items }) {
         <div className="grid divide-y divide-blue-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
           {safeItems.map((item) => (
             <div key={item.label} className="px-5 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{item.label}</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-600">{item.label}</p>
               <p className="mt-1 text-sm font-bold text-slate-900">{item.title}</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">{item.detail}</p>
             </div>
@@ -137,7 +134,7 @@ function Overview({ data }) {
         </Panel>
         <Panel title="Programs represented" subtitle="Programs with the most participating interns">
           <Visualization data={overview.internsByProgram} height={360} label="Horizontal bar chart of interns by academic program" emptyTitle="No program data">
-            <HorizontalBars data={overview.internsByProgram || []} height={360} color="#7c3aed" />
+            <HorizontalBars data={overview.internsByProgram || []} height={360} color="#7c3aed" labelWidth={200} labelLimit={40} tickFormat={shortProgramName} />
           </Visualization>
         </Panel>
         <Panel title="Endorsement activity" subtitle="Unique endorsements by month">
@@ -189,16 +186,22 @@ function HeiRisk({ data }) {
   const hei = data.hei || {}
   const countries = data.options?.countries || []
   const topHei = hei.internsByHei?.[0]
-  const visibleTotal = (hei.internsByHei || []).reduce((sum, row) => sum + Number(row.totalInterns || 0), 0)
+  const charted = hei.internsByHei || []
+  const tableRows = hei.table || []
+  // Shares and counts use the whole selection. The chart and table carry only the top
+  // rows; the fallbacks cover a response cached before the API returned totals.
+  const totalInterns = Number(hei.totalInterns ?? data.overview?.totalInterns ?? charted.reduce((sum, row) => sum + Number(row.totalInterns || 0), 0))
+  const institutions = Number(hei.totalHeis ?? tableRows.length)
+  const tableIsTopSubset = institutions > tableRows.length
   return (
     <div className="grid gap-5">
       <InsightSummary items={[
-        topHei && { label: 'Largest participating HEI', title: topHei.name, detail: `${n(topHei.totalInterns)} interns, representing ${percent(topHei.totalInterns, visibleTotal)} of the institutions shown.` },
-        { label: 'Institutions represented', title: `${n((hei.table || []).length)} HEIs`, detail: 'Use the table to inspect destination and host-organization breadth.' },
+        topHei && { label: 'Largest participating HEI', title: topHei.name, detail: `${n(topHei.totalInterns)} interns, ${percent(topHei.totalInterns, totalInterns)} of the ${n(totalInterns)} in this selection.` },
+        { label: 'Institutions represented', title: `${n(institutions)} HEIs`, detail: tableIsTopSubset ? `The table below lists the ${n(tableRows.length)} with the most interns.` : 'Use the table to inspect destination and host-organization breadth.' },
       ]} />
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Interns by HEI" subtitle="Largest participating institutions first">
+        <Panel title="Interns by HEI" subtitle={institutions > charted.length ? `Top ${n(charted.length)} of ${n(institutions)} institutions` : 'Largest participating institutions first'}>
           <Visualization data={hei.internsByHei} height={380} label="Horizontal bar chart of interns by higher education institution" emptyTitle="No HEI participation data">
             <HorizontalBars data={hei.internsByHei || []} height={380} color="#2563eb" />
           </Visualization>
@@ -228,7 +231,7 @@ function HeiRisk({ data }) {
         </div>
       </div>
 
-      <Panel title="HEI concentration details" subtitle="Breadth of destinations and host organizations">
+      <Panel title="HEI concentration details" subtitle={tableIsTopSubset ? `The ${n(tableRows.length)} institutions with the most interns` : 'Breadth of destinations and host organizations'}>
         <DataTable rows={hei.table} caption="HEI concentration details" columns={[
           { key: 'name', label: 'Higher education institution' },
           { key: 'totalEndorsements', label: 'Endorsements', num: true, render: (row) => n(row.totalEndorsements) },
@@ -245,11 +248,12 @@ function Geography({ data }) {
   const geography = data.geography || {}
   const topCountry = geography.internsByCountry?.[0]
   const topHost = geography.hosts?.[0]
-  const visibleInterns = (geography.internsByCountry || []).reduce((sum, row) => sum + Number(row.totalInterns || 0), 0)
+  // Same rule as HEI risk: divide by the selection, not by the ten countries charted.
+  const totalInterns = Number(geography.totalInterns ?? data.overview?.totalInterns ?? (geography.internsByCountry || []).reduce((sum, row) => sum + Number(row.totalInterns || 0), 0))
   return (
     <div className="grid gap-5">
       <InsightSummary items={[
-        topCountry && { label: 'Leading destination', title: topCountry.name, detail: `${n(topCountry.totalInterns)} interns, or ${percent(topCountry.totalInterns, visibleInterns)} of destinations shown.` },
+        topCountry && { label: 'Leading destination', title: topCountry.name, detail: `${n(topCountry.totalInterns)} interns, or ${percent(topCountry.totalInterns, totalInterns)} of the ${n(totalInterns)} in this selection.` },
         topHost && { label: 'Leading host organization', title: topHost.name, detail: `${n(topHost.totalInterns)} participating interns in the current selection.` },
         { label: 'Mapped routes', title: `${n((geography.routes || []).length)} origin-destination paths`, detail: 'Line thickness and destination marker size represent intern volume.' },
       ]} />
@@ -393,7 +397,7 @@ function SiapDashboard() {
         onTabChange={setTab}
       />
 
-      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:py-7 lg:px-8">
+      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         {section ? <FilterBar
           fields={filterFields}
           filters={filters}
@@ -403,7 +407,7 @@ function SiapDashboard() {
           onToggle={() => setFiltersOpen((current) => !current)}
         /> : null}
 
-        <section className="mt-7" aria-busy={loading} aria-labelledby={`tab-${tab}`}>
+        <section className="mt-6" aria-busy={loading} aria-labelledby={`tab-${tab}`}>
           <SectionIntro tab={tab} filters={filters} />
 
           {error ? (
@@ -448,7 +452,7 @@ function ViewFallback({ viewId }) {
   return (
     <>
       <Header activeView={viewId} title={view.title} statusLabel="Status" statusValue="Loading..." />
-      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8" role="status" aria-label={`Loading ${view.title}`}>
+      <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 sm:pb-7 lg:px-8" role="status" aria-label={`Loading ${view.title}`}>
         <div className="skeleton h-28 rounded-2xl" />
         <div className="mt-7 grid gap-5 xl:grid-cols-2"><div className="skeleton h-96 rounded-2xl" /><div className="skeleton h-96 rounded-2xl" /></div>
       </main>

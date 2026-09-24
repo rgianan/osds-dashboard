@@ -43,10 +43,9 @@ export default function AntiHazingDashboard() {
         statusValue={report ? formatPublishedDate(report.publishedAt) || 'Unknown' : 'Loading...'}
       />
 
-      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:py-7 lg:px-8">
+      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <section aria-busy={!report && !error} aria-labelledby="anti-hazing-title">
           <PageIntro
-            eyebrow="RA 11053 implementation"
             titleId="anti-hazing-title"
             title="How HEIs are implementing the Anti-Hazing Law"
             description="Positive responses from higher education institutions for each implementation indicator in the RA 11053 report."

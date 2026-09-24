@@ -1,3 +1,11 @@
+# Dependencies are installed with npm install, never committed.
+node_modules/
+
+# Scratch output from AI coding tools and one-off data cleaning. It can hold
+# cell-by-cell dumps of the source workbooks, so it must never be committed.
+.codex-tmp/
+outputs/
+
 # Firebase CLI and local emulators
 .firebase/
 firebase-debug.log*

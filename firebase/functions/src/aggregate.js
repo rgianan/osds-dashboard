@@ -170,6 +170,10 @@ function heiTable(rows) {
 export function buildHeiRisk(rows) {
   const countries = unique(rows.map((row) => row.country)).sort((a, b) => a.localeCompare(b))
   return {
+    // Totals for the whole selection. The charts and table below carry only the
+    // top rows, so shares and counts must not be computed from them.
+    totalInterns: rows.length,
+    totalHeis: countUnique(rows, 'hei'),
     internsByHei: groupInterns(rows, 'hei', 12),
     endorsementsByHeiCountry: endorsementsByHeiCountry(rows, countries),
     endorsementsByRegion: groupEndorsements(rows, 'region', 12),
@@ -205,6 +209,7 @@ function routeSummary(rows) {
 
 export function buildGeography(rows) {
   return {
+    totalInterns: rows.length,
     internsByCountry: groupInterns(rows, 'country', 10),
     hosts: groupInterns(rows, 'host', 15),
     routes: routeSummary(rows),

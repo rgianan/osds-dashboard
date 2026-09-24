@@ -63,13 +63,12 @@ export default function TosfDashboard() {
         statusValue={report ? report.academicYear || 'Not stated' : 'Loading...'}
       />
 
-      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:py-7 lg:px-8">
+      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <section aria-busy={!report && !error} aria-labelledby="tosf-title">
           <PageIntro
-            eyebrow="TOSF increase applications"
             titleId="tosf-title"
-            title="Applications to increase tuition and other school fees"
-            description="Private HEI applications received by CHED regional offices (CHEDROs), and how schools responded to CHED's appeal to COCOPEA (Coordinating Council of Private Educational Associations)."
+            title="Increase applications and appeal results"
+            description="Private HEI applications received by CHED regional offices, and how schools responded to CHED's appeal to COCOPEA."
             aside={report?.publishedAt ? `Published ${formatPublishedDate(report.publishedAt)}` : null}
           />
 
@@ -103,7 +102,7 @@ export default function TosfDashboard() {
                   <Visualization data={byAppeal} height={chartHeight(byAppeal.length, 30)} label="Stacked bar chart of schools that lowered, deferred, or withdrew their TOSF increase by region" emptyTitle="No appeal results">
                     <MultiBars data={byAppeal} series={APPEAL_SERIES} height={chartHeight(byAppeal.length, 30)} stacked labelWidth={170} labelLimit={28} />
                   </Visualization>
-                  {byAppeal.length < regions.length ? <DefinitionNote>Regions with no lowered, deferred, or withdrawn increases are not shown.</DefinitionNote> : null}
+                  <DefinitionNote>COCOPEA is the Coordinating Council of Private Educational Associations.{byAppeal.length < regions.length ? ' Regions with no lowered, deferred, or withdrawn increases are not shown.' : ''}</DefinitionNote>
                 </Panel>
               </div>
 

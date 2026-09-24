@@ -3,7 +3,7 @@ import { Users } from 'lucide-react'
 import { getForeignStudentsCube } from '../lib/api.js'
 import { n, shortRegionName } from '../lib/format.js'
 import { KpiCard, Panel } from './Panel.jsx'
-import { DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, Visualization } from './DashboardShell.jsx'
+import { DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, PageIntro, Visualization } from './DashboardShell.jsx'
 
 const HorizontalBars = lazy(() => import('./Charts.jsx').then((module) => ({ default: module.HorizontalBars })))
 const PhilippinesCityMap = lazy(() => import('./PhilippinesCityMap.jsx').then((module) => ({ default: module.PhilippinesCityMap })))
@@ -95,7 +95,7 @@ export default function ForeignStudentsDashboard() {
         statusValue={years.length ? `${years[0]} to ${years[years.length - 1]}` : 'Loading...'}
       />
 
-      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:py-7 lg:px-8">
+      <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <FilterBar
           fields={fields}
           filters={filters}
@@ -105,15 +105,13 @@ export default function ForeignStudentsDashboard() {
           onToggle={() => setFiltersOpen((current) => !current)}
         />
 
-        <section className="mt-7" aria-busy={!data && !error} aria-labelledby="foreign-students-title">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">Foreign student enrollment</p>
-              <h2 id="foreign-students-title" className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Foreign students in Philippine HEIs</h2>
-              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">Enrollment records reported by higher education institutions, with filters for academic year, nationality, region, sex, HEI type, city, and province.</p>
-            </div>
-            <p className="text-xs font-medium text-slate-500">{activeFilterCount ? `View refined by ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'All records included'}</p>
-          </div>
+        <section className="mt-6" aria-busy={!data && !error} aria-labelledby="foreign-students-title">
+          <PageIntro
+            titleId="foreign-students-title"
+            title="Foreign students in Philippine HEIs"
+            description="Enrollment records reported by higher education institutions."
+            aside={activeFilterCount ? `View refined by ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'All records included'}
+          />
 
           {error ? <ErrorAlert title="Foreign students data could not be loaded" message={error} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} /> : null}
 
