@@ -254,7 +254,7 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
           <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Active filters">
             {activeFilters.map(([key, value]) => (
               <button key={key} type="button" onClick={() => onChange(key, '')} className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Remove ${labels[key]} filter ${value}`}>
-                <span className="text-blue-500">{labels[key]}:</span> {value} <X size={13} aria-hidden="true" />
+                <span className="text-blue-700">{labels[key]}:</span> {value} <X size={13} aria-hidden="true" />
               </button>
             ))}
             <button type="button" onClick={onClear} className="min-h-8 rounded-full px-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 sm:hidden">Clear all</button>

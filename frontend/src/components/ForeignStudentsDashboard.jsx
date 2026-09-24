@@ -1,5 +1,5 @@
 import { lazy, useEffect, useMemo, useState } from 'react'
-import { Users } from 'lucide-react'
+import { Flag, MapPin, School, Users } from 'lucide-react'
 import { getForeignStudentsCube } from '../lib/api.js'
 import { n, shortRegionName } from '../lib/format.js'
 import { KpiCard, Panel } from './Panel.jsx'
@@ -10,6 +10,9 @@ const PhilippinesCityMap = lazy(() => import('./PhilippinesCityMap.jsx').then((m
 
 const DEFAULT_FILTERS = { academicYear: '', nationality: '', region: '', sex: '', heiType: '', city: '', province: '' }
 const TOP_NATIONALITIES = 15
+const NOT_SPECIFIED = 'Not specified'
+// Labels in the nationality list that are not a single nationality.
+const NOT_A_NATIONALITY = new Set([NOT_SPECIFIED, 'Other'])
 
 function barHeight(rows) {
   return Math.max(220, rows * 30 + 40)
@@ -30,6 +33,8 @@ function summarize({ meta, dimensions, cells }, filters) {
   const byRegion = new Array(dimensions.region.length).fill(0)
   const byNationality = new Array(dimensions.nationality.length).fill(0)
   const byCity = new Array(dimensions.city.length).fill(0)
+  // Datasets published before the HEI code was added have no hei field.
+  const heis = positions.hei == null ? null : new Set()
   let total = 0
 
   for (const row of cells) {
@@ -39,16 +44,21 @@ function summarize({ meta, dimensions, cells }, filters) {
     byRegion[row[positions.region]] += count
     byNationality[row[positions.nationality]] += count
     byCity[row[positions.city]] += count
+    heis?.add(dimensions.hei[row[positions.hei]])
   }
+  heis?.delete(NOT_SPECIFIED)
 
   const nationalities = ranked(dimensions.nationality, byNationality)
   const cities = dimensions.city.map((city, index) => ({ ...city, totalStudents: byCity[index] })).filter((city) => city.totalStudents > 0)
   const isMapped = (city) => city.lat != null && city.lng != null
   return {
     total,
+    heiCount: heis ? heis.size : null,
+    cityCount: cities.length,
     regions: ranked(dimensions.region, byRegion, shortRegionName),
     nationalities: nationalities.slice(0, TOP_NATIONALITIES),
-    nationalityCount: nationalities.length,
+    nationalityCount: nationalities.filter((row) => !NOT_A_NATIONALITY.has(row.name)).length,
+    listedNationalities: nationalities.length,
     cities: cities.filter(isMapped),
     unmappedStudents: cities.filter((city) => !isMapped(city)).reduce((sum, city) => sum + city.totalStudents, 0),
   }
@@ -126,36 +136,43 @@ export default function ForeignStudentsDashboard() {
             <div className="section-enter mt-5 grid gap-5">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <KpiCard icon={Users} tone="blue" label="Total foreign students" value={n(summary.total)} hint={totalHint} />
+                <KpiCard
+                  icon={School}
+                  tone="violet"
+                  label="HEIs with foreign students"
+                  value={summary.heiCount == null ? 'N/A' : n(summary.heiCount)}
+                  hint={summary.heiCount == null ? 'Not in the published data' : 'Institutions reporting at least one foreign student'}
+                />
+                <KpiCard icon={Flag} tone="green" label="Nationalities represented" value={n(summary.nationalityCount)} hint="Excludes Other and unspecified entries" />
+                <KpiCard icon={MapPin} tone="amber" label="Cities with foreign students" value={n(summary.cityCount)} hint="Cities where those HEIs are located" />
               </div>
 
               {summary.total === 0 ? (
                 <EmptyState title="No foreign students match these filters" message="Change or clear one or more filters." />
               ) : (
-                <>
-                  <div className="grid gap-5 xl:grid-cols-2">
-                    <Panel title="Foreign students by region" subtitle="Region of the higher education institution">
-                      <Visualization data={summary.regions} height={barHeight(summary.regions.length)} label="Horizontal bar chart of foreign students by region" emptyTitle="No regional data">
-                        <HorizontalBars data={summary.regions} valueKey="totalStudents" height={barHeight(summary.regions.length)} color="#2563eb" labelWidth={170} labelLimit={28} />
-                      </Visualization>
-                    </Panel>
-                    <Panel
-                      title="Foreign students by nationality"
-                      subtitle={summary.nationalityCount > TOP_NATIONALITIES ? `Top ${TOP_NATIONALITIES} of ${n(summary.nationalityCount)} nationalities` : `${n(summary.nationalityCount)} nationalities`}
-                    >
-                      <Visualization data={summary.nationalities} height={barHeight(summary.nationalities.length)} label="Horizontal bar chart of foreign students by nationality" emptyTitle="No nationality data">
-                        <HorizontalBars data={summary.nationalities} valueKey="totalStudents" height={barHeight(summary.nationalities.length)} color="#0f766e" />
-                      </Visualization>
-                      <DefinitionNote>Spelling variants in the source file are combined, for example INDIAN and Indian, or Nepalese and Nepali.</DefinitionNote>
-                    </Panel>
-                  </div>
-
-                  <Panel title="Foreign students by city" subtitle="City of the higher education institution; circle size shows the number of students">
+                // One row on wide screens; the map column is narrower because the country is tall.
+                <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
+                  <Panel title="Foreign students by region" subtitle="Region of the higher education institution">
+                    <Visualization data={summary.regions} height={barHeight(summary.regions.length)} label="Horizontal bar chart of foreign students by region" emptyTitle="No regional data">
+                      <HorizontalBars data={summary.regions} valueKey="totalStudents" height={barHeight(summary.regions.length)} color="#2563eb" labelWidth={140} labelLimit={28} />
+                    </Visualization>
+                  </Panel>
+                  <Panel
+                    title="Foreign students by nationality"
+                    subtitle={summary.listedNationalities > TOP_NATIONALITIES ? `Top ${TOP_NATIONALITIES} of ${n(summary.nationalityCount)} nationalities` : `${n(summary.nationalityCount)} nationalities`}
+                  >
+                    <Visualization data={summary.nationalities} height={barHeight(summary.nationalities.length)} label="Horizontal bar chart of foreign students by nationality" emptyTitle="No nationality data">
+                      <HorizontalBars data={summary.nationalities} valueKey="totalStudents" height={barHeight(summary.nationalities.length)} color="#0f766e" />
+                    </Visualization>
+                    <DefinitionNote>Spelling variants in the source file are combined, for example INDIAN and Indian, or Nepalese and Nepali.</DefinitionNote>
+                  </Panel>
+                  <Panel title="Foreign students by city" subtitle="City of the HEI; circle area shows the number of students" className="lg:col-span-2 xl:col-span-1">
                     <Visualization data={summary.cities} height={560} label="Map of the Philippines showing foreign students by city" emptyTitle="No cities can be mapped">
                       <PhilippinesCityMap cities={summary.cities} total={summary.total} />
                     </Visualization>
                     {summary.unmappedStudents ? <DefinitionNote>{n(summary.unmappedStudents)} students attend HEIs in cities that could not be placed on the map.</DefinitionNote> : null}
                   </Panel>
-                </>
+                </div>
               )}
             </div>
           ) : null}

@@ -84,13 +84,18 @@ export function summarize(dataset, filters = {}) {
   const countPosition = positions.count
   const summaryFields = ['academicYear', 'region', 'sex', 'nationality', 'city']
   const totals = Object.fromEntries(summaryFields.map((field) => [field, new Array(dimensions[field].length).fill(0)]))
+  // Datasets published before the HEI code was added have no hei field.
+  const heis = positions.hei == null ? null : new Set()
   let total = 0
   for (const cell of matchingCells(dataset, filters)) {
     total += cell[countPosition]
     for (const field of summaryFields) totals[field][cell[positions[field]]] += cell[countPosition]
+    heis?.add(dimensions.hei[cell[positions.hei]])
   }
+  heis?.delete('Not specified')
   return {
     total,
+    heiCount: heis ? heis.size : null,
     byAcademicYear: dimensions.academicYear.map((name, index) => ({ name, count: totals.academicYear[index] })).filter((row) => row.count > 0),
     byRegion: ranked(dimensions.region, totals.region),
     bySex: ranked(dimensions.sex, totals.sex),

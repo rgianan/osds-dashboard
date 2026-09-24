@@ -17,7 +17,8 @@ export function PhilippinesCityMap({ cities = [], total = 0 }) {
 
   return (
     <div className="h-[460px] overflow-hidden rounded-xl border border-slate-200 sm:h-[560px]">
-      <MapContainer bounds={PHILIPPINES_BOUNDS} scrollWheelZoom={false} minZoom={5}>
+      {/* Fractional zoom lets the country fill the frame instead of snapping to a smaller whole zoom level. */}
+      <MapContainer bounds={PHILIPPINES_BOUNDS} boundsOptions={{ padding: [4, 4] }} zoomSnap={0.1} zoomDelta={0.5} scrollWheelZoom={false} minZoom={5}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

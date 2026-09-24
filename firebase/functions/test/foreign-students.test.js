@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { buildResponse, parseQuery, summarize, validateDataset } from '../src/foreign-students.js'
 
 const dataset = {
-  meta: { generatedAt: '2026-09-22T00:00:00+00:00', totalRecords: 10, cellFields: ['academicYear', 'region', 'sex', 'nationality', 'heiType', 'city', 'province', 'count'] },
+  meta: { generatedAt: '2026-09-22T00:00:00+00:00', totalRecords: 10, cellFields: ['academicYear', 'region', 'sex', 'nationality', 'heiType', 'city', 'province', 'hei', 'count'] },
   dimensions: {
     academicYear: ['2023-2024', '2024-2025'],
     region: ['07 - CENTRAL VISAYAS', '11 - DAVAO REGION'],
@@ -15,19 +15,20 @@ const dataset = {
       { name: 'Cebu City', province: 'Cebu', lat: 10.3, lng: 123.9 },
       { name: 'Davao City', province: 'Davao del Sur', lat: 7.1, lng: 125.6 },
     ],
+    hei: ['07001', '07002', '11001', 'Not specified'],
   },
-  // [academicYear, region, sex, nationality, heiType, city, province, count]
+  // [academicYear, region, sex, nationality, heiType, city, province, hei, count]
   cells: [
-    [1, 1, 1, 1, 0, 1, 1, 4],
-    [1, 1, 0, 1, 0, 1, 1, 2],
-    [0, 0, 0, 0, 1, 0, 0, 3],
-    [1, 0, 1, 0, 1, 0, 0, 1],
+    [1, 1, 1, 1, 0, 1, 1, 2, 4],
+    [1, 1, 0, 1, 0, 1, 1, 2, 2],
+    [0, 0, 0, 0, 1, 0, 0, 0, 3],
+    [1, 0, 1, 0, 1, 0, 0, 1, 1],
   ],
 }
 
 test('validates cell shape and totals', () => {
   assert.equal(validateDataset(dataset), 10)
-  assert.throws(() => validateDataset({ ...dataset, cells: [[0, 0, 0, 0, 9, 0, 0, 1]] }), /invalid index/)
+  assert.throws(() => validateDataset({ ...dataset, cells: [[0, 0, 0, 0, 9, 0, 0, 0, 1]] }), /invalid index/)
   assert.throws(() => validateDataset({ ...dataset, meta: { ...dataset.meta, totalRecords: 11 } }), /add up to 10/)
 })
 
@@ -39,6 +40,19 @@ test('summarizes with filters', () => {
   assert.equal(filtered.total, 6)
   assert.deepEqual(filtered.bySex, [{ name: 'Male', count: 4 }, { name: 'Female', count: 2 }])
   assert.equal(filtered.byCity[0].name, 'Davao City')
+})
+
+test('counts distinct HEIs, and reports none for datasets without HEI codes', () => {
+  assert.equal(summarize(dataset).heiCount, 3)
+  assert.equal(summarize(dataset, { academicYear: '2024-2025', nationality: 'Indian' }).heiCount, 1)
+  const unspecified = { ...dataset, cells: [[0, 0, 0, 0, 0, 0, 0, 3, 10]] }
+  assert.equal(summarize(unspecified).heiCount, 0)
+  const legacy = {
+    ...dataset,
+    meta: { ...dataset.meta, cellFields: dataset.meta.cellFields.filter((field) => field !== 'hei') },
+    cells: dataset.cells.map((cell) => [...cell.slice(0, 7), cell[8]]),
+  }
+  assert.equal(summarize(legacy).heiCount, null)
 })
 
 test('accepts case-insensitive filter values and rejects unknown ones', () => {
