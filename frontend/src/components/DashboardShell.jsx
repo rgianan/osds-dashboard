@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { AlertTriangle, Banknote, BarChart3, ChevronDown, Filter, Globe2, Plane, RefreshCw, RotateCcw, ShieldCheck, X } from 'lucide-react'
+import { n } from '../lib/format.js'
 
 // hidden: left out of the header switcher; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
@@ -11,7 +12,8 @@ export const DASHBOARD_VIEWS = [
 // The page shown when the URL has no #/<id> route.
 export const DEFAULT_VIEW_ID = DASHBOARD_VIEWS.find((view) => !view.hidden).id
 
-const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-3 xl:grid-cols-6', 7: 'lg:grid-cols-4 xl:grid-cols-7' }
+// Seven filters in one row were too narrow to read, so they wrap to four and three.
+const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-3 xl:grid-cols-6', 7: 'lg:grid-cols-4' }
 
 export function EmptyState({ title = 'No data for this view', message = 'Try broadening or clearing the selected filters.', compact = false }) {
   return (
@@ -25,16 +27,35 @@ export function EmptyState({ title = 'No data for this view', message = 'Try bro
   )
 }
 
-export function Visualization({ children, data, height = 280, label, emptyTitle }) {
+function cellText(column, row) {
+  if (column.render) return column.render(row)
+  return column.num ? n(row[column.key]) : row[column.key]
+}
+
+// columns ({ key, label, num, render }) add the chart's numbers as a table that only
+// screen readers announce; the chart itself is exposed as one labelled image.
+export function Visualization({ children, data, height = 280, label, emptyTitle, columns = null }) {
   const hasData = Array.isArray(data) ? data.length > 0 : Boolean(data)
   if (!hasData) return <EmptyState title={emptyTitle} compact />
 
   return (
-    <div role="img" aria-label={label}>
-      <Suspense fallback={<div className="skeleton flex items-center justify-center rounded-xl text-sm font-medium text-slate-600" style={{ height }}>Loading visualization...</div>}>
-        {children}
-      </Suspense>
-    </div>
+    <>
+      <div role="img" aria-label={label}>
+        <Suspense fallback={<div className="skeleton flex items-center justify-center rounded-xl text-sm font-medium text-slate-600" style={{ height }}>Loading visualization...</div>}>
+          {children}
+        </Suspense>
+      </div>
+      {columns && Array.isArray(data) ? (
+        // The wrapper carries sr-only: a table ignores a 1px width and would widen the page.
+        <div className="sr-only">
+          <table>
+            <caption>{`Data for: ${label}`}</caption>
+            <thead><tr>{columns.map((column) => <th key={column.key} scope="col">{column.label}</th>)}</tr></thead>
+            <tbody>{data.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column.key}>{cellText(column, row)}</td>)}</tr>)}</tbody>
+          </table>
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -63,7 +84,7 @@ export function ErrorAlert({ title, message, onRetry }) {
         <AlertTriangle className="mt-0.5 shrink-0" size={20} aria-hidden="true" />
         <div><p className="text-sm font-bold">{title}</p><p className="mt-1 text-sm text-red-700">{message}</p></div>
       </div>
-      {onRetry ? <button type="button" onClick={onRetry} className="min-h-10 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200">Try again</button> : null}
+      {onRetry ? <button type="button" onClick={onRetry} className="min-h-11 rounded-lg bg-red-700 lg:min-h-10 px-4 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200">Try again</button> : null}
     </div>
   )
 }
@@ -76,7 +97,7 @@ export function DataTable({ rows, columns, caption }) {
     <div className="max-h-[380px] overflow-auto rounded-xl border border-slate-200">
       <table className="min-w-full text-sm">
         <caption className="sr-only">{caption}</caption>
-        <thead className="sticky top-0 z-10 bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
+        <thead className="sticky top-0 z-10 bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
           <tr>{columns.map((column) => <th key={column.key} scope="col" className={`border-b border-slate-200 px-3 py-2.5 ${column.num ? 'text-right' : ''}`}>{column.label}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -91,19 +112,22 @@ export function DataTable({ rows, columns, caption }) {
   )
 }
 
-function Select({ id, label, value, options, onChange, allLabel = 'All' }) {
+const asIs = (value) => value
+
+// format changes only what is shown (such as "F" -> "Female"); the value stays the raw option.
+function Select({ id, label, value, options, onChange, allLabel = 'All', format = asIs }) {
   return (
     <label htmlFor={id} className="min-w-0">
       <span className="mb-1.5 block text-xs font-semibold text-slate-600">{label}</span>
       <span className="relative block">
         <select
           id={id}
-          className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+          className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 lg:h-10"
           value={value || ''}
           onChange={(event) => onChange(event.target.value)}
         >
           <option value="">{allLabel}</option>
-          {(options || []).map((option) => <option key={option} value={option}>{option}</option>)}
+          {(options || []).map((option) => <option key={option} value={option}>{format(option)}</option>)}
         </select>
         <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
       </span>
@@ -137,7 +161,8 @@ function DashboardSwitcher({ activeView }) {
   )
 }
 
-export function Header({ activeView, title, statusLabel, statusValue, onRefresh, showRefresh = false, loading = false, tabs = null, tab, onTabChange }) {
+// dataAsOf: the data's date, already formatted (formatDataDate); every page shows it the same way.
+export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefresh = false, loading = false, tabs = null, tab, onTabChange }) {
   const badge = DASHBOARD_VIEWS.find((view) => view.id === activeView)?.badge || ''
 
   function handleTabKeyDown(event, index) {
@@ -158,23 +183,23 @@ export function Header({ activeView, title, statusLabel, statusValue, onRefresh,
       <div className={`mx-auto max-w-[1600px] px-4 pt-5 sm:px-6 lg:px-8 ${tabs ? '' : 'pb-4'}`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between xl:flex-nowrap">
           <div className="flex min-w-0 items-center gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#102a43] text-[11px] font-black tracking-wide text-white shadow-sm">{badge}</div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#102a43] text-xs font-black tracking-wide text-white shadow-sm">{badge}</div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">Commission on Higher Education</p>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">Commission on Higher Education</p>
               <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
             </div>
           </div>
           <DashboardSwitcher activeView={activeView} />
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <div className="min-w-0 text-left sm:text-right" aria-live="polite">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">{statusLabel}</p>
-              <p className="truncate text-xs font-medium text-slate-600">{statusValue}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Data as of</p>
+              <p className="truncate text-xs font-medium text-slate-600">{dataAsOf || 'Loading...'}</p>
             </div>
             {showRefresh ? <button
               type="button"
               onClick={onRefresh}
               disabled={loading}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#102a43] px-3.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#183b56] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
+              className="inline-flex min-h-11 items-center lg:min-h-10 justify-center gap-2 rounded-lg bg-[#102a43] px-3.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#183b56] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
               aria-label="Refresh the active dashboard section"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
@@ -214,8 +239,10 @@ export function Header({ activeView, title, statusLabel, statusValue, onRefresh,
   )
 }
 
+// fields: [{ key, label, options, allLabel, format }]; format controls how an option is shown.
 export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }) {
   const labels = Object.fromEntries(fields.map((field) => [field.key, field.label]))
+  const formats = Object.fromEntries(fields.map((field) => [field.key, field.format || asIs]))
   const activeFilters = fields.map((field) => [field.key, filters[field.key]]).filter(([, value]) => value)
 
   return (
@@ -234,7 +261,7 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
               <RotateCcw size={14} aria-hidden="true" /> Clear all
             </button>
           ) : null}
-          <button type="button" onClick={onToggle} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden" aria-expanded={open} aria-controls="dashboard-filters">
+          <button type="button" onClick={onToggle} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden" aria-expanded={open} aria-controls="dashboard-filters">
             {open ? 'Hide' : 'Filters'} <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
           </button>
         </div>
@@ -245,7 +272,7 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
           <legend className="sr-only">Dashboard filters</legend>
           <div className={`grid gap-3 sm:grid-cols-2 ${LG_GRID_COLUMNS[fields.length] || 'lg:grid-cols-5'}`}>
             {fields.map((field) => (
-              <Select key={field.key} id={`filter-${field.key}`} label={field.label} value={filters[field.key]} options={field.options} allLabel={field.allLabel} onChange={(value) => onChange(field.key, value)} />
+              <Select key={field.key} id={`filter-${field.key}`} label={field.label} value={filters[field.key]} options={field.options} allLabel={field.allLabel} format={formats[field.key]} onChange={(value) => onChange(field.key, value)} />
             ))}
           </div>
         </fieldset>
@@ -253,8 +280,8 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
         {activeFilters.length ? (
           <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Active filters">
             {activeFilters.map(([key, value]) => (
-              <button key={key} type="button" onClick={() => onChange(key, '')} className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Remove ${labels[key]} filter ${value}`}>
-                <span className="text-blue-700">{labels[key]}:</span> {value} <X size={13} aria-hidden="true" />
+              <button key={key} type="button" onClick={() => onChange(key, '')} className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Remove ${labels[key]} filter ${formats[key](value)}`}>
+                <span className="text-blue-700">{labels[key]}:</span> {formats[key](value)} <X size={13} aria-hidden="true" />
               </button>
             ))}
             <button type="button" onClick={onClear} className="min-h-8 rounded-full px-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 sm:hidden">Clear all</button>

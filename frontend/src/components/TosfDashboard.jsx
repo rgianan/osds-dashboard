@@ -1,7 +1,7 @@
 import { lazy } from 'react'
 import { CircleCheck, CirclePause, CircleX, FileText, TrendingDown } from 'lucide-react'
-import { n, shortRegionName } from '../lib/format.js'
-import { formatPublishedDate, reportTable, useReport } from '../lib/useReport.js'
+import { formatDataDate, n, shortRegionName } from '../lib/format.js'
+import { reportTable, useReport } from '../lib/useReport.js'
 import { KpiCard, Panel } from './Panel.jsx'
 import { DataTable, DefinitionNote, ErrorAlert, Header, PageIntro, Visualization } from './DashboardShell.jsx'
 
@@ -27,7 +27,6 @@ function combineRegions(applications, appeal) {
   return applications.rows.map((row) => {
     const appealRow = appealByRegion.get(row.label)
     return {
-      region: row.label,
       name: shortRegionName(row.label),
       received: row.values.applicationsReceived,
       approved: row.values.approvedWithinRir,
@@ -56,12 +55,7 @@ export default function TosfDashboard() {
 
   return (
     <>
-      <Header
-        activeView="tosf"
-        title="Tuition and Other School Fees"
-        statusLabel="Academic year"
-        statusValue={report ? report.academicYear || 'Not stated' : 'Loading...'}
-      />
+      <Header activeView="tosf" title="Tuition and Other School Fees" dataAsOf={formatDataDate(report?.publishedAt)} />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <section aria-busy={!report && !error} aria-labelledby="tosf-title">
@@ -69,7 +63,7 @@ export default function TosfDashboard() {
             titleId="tosf-title"
             title="Increase applications and appeal results"
             description="Private HEI applications received by CHED regional offices, and how schools responded to CHED's appeal to COCOPEA."
-            aside={report?.publishedAt ? `Published ${formatPublishedDate(report.publishedAt)}` : null}
+            aside={report?.academicYear ? `Academic year ${report.academicYear}` : null}
           />
 
           {error ? <ErrorAlert title="TOSF data could not be loaded" message={error} onRetry={retry} /> : null}
@@ -84,11 +78,11 @@ export default function TosfDashboard() {
           {applications && appeal ? (
             <div className="section-enter mt-5 grid gap-5">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <KpiCard icon={FileText} tone="blue" label="Applications received" value={n(applications.totals.applicationsReceived)} hint="Received by CHED regional offices" />
-                <KpiCard icon={CircleCheck} tone="green" label="Approved within inflation rate" value={n(applications.totals.approvedWithinRir)} hint="Private HEIs with CHEDRO-approved increases at or below the regional inflation rate" />
-                <KpiCard icon={TrendingDown} tone="violet" label="Lowered their increase" value={n(appeal.totals.lowered)} hint="Tuition or other fees, after CHED's appeal" />
-                <KpiCard icon={CirclePause} tone="amber" label="Deferred their increase" value={n(appeal.totals.deferred)} hint="After CHED's appeal" />
-                <KpiCard icon={CircleX} tone="slate" label="Withdrew their application" value={n(appeal.totals.withdrawn)} hint="After CHED's appeal" />
+                <KpiCard icon={FileText} label="Applications received" value={n(applications.totals.applicationsReceived)} hint="Received by CHED regional offices" />
+                <KpiCard icon={CircleCheck} label="Approved within inflation rate" value={n(applications.totals.approvedWithinRir)} hint="Private HEIs with CHEDRO-approved increases at or below the regional inflation rate" />
+                <KpiCard icon={TrendingDown} label="Lowered their increase" value={n(appeal.totals.lowered)} hint="Tuition or other fees, after CHED's appeal" />
+                <KpiCard icon={CirclePause} label="Deferred their increase" value={n(appeal.totals.deferred)} hint="After CHED's appeal" />
+                <KpiCard icon={CircleX} label="Withdrew their application" value={n(appeal.totals.withdrawn)} hint="After CHED's appeal" />
               </div>
 
               <div className="grid gap-5 xl:grid-cols-2">
@@ -108,7 +102,7 @@ export default function TosfDashboard() {
 
               <Panel title="Regional details" subtitle={report.academicYear ? `Applications for academic year ${report.academicYear}` : 'All regions'}>
                 <DataTable rows={regions} caption="TOSF increase applications and appeal results by region" columns={[
-                  { key: 'region', label: 'Region' },
+                  { key: 'name', label: 'Region' },
                   { key: 'received', label: 'Received', num: true, render: (row) => n(row.received) },
                   { key: 'approved', label: 'Approved within rate', num: true, render: (row) => `${n(row.approved)}${row.notes.length ? '*' : ''}` },
                   { key: 'lowered', label: 'Lowered', num: true, render: (row) => n(row.lowered) },

@@ -22,8 +22,3 @@ export function useReport(id) {
 export function reportTable(report, key) {
   return report?.tables.find((table) => table.key === key) || null
 }
-
-export function formatPublishedDate(value) {
-  if (!value) return ''
-  return new Intl.DateTimeFormat('en-PH', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' }).format(new Date(value))
-}

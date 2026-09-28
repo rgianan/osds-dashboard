@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import {
   Activity,
-  AlertTriangle,
   BarChart3,
   CalendarClock,
   CheckCircle2,
@@ -14,9 +13,9 @@ import {
   Users,
 } from 'lucide-react'
 import { postJson } from './lib/api.js'
-import { n, shortProgramName } from './lib/format.js'
+import { formatDataDate, n, sexLabel, shortProgramName, shortRegionName } from './lib/format.js'
 import { KpiCard, Panel } from './components/Panel.jsx'
-import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, FilterBar, Header, PageIntro, Visualization } from './components/DashboardShell.jsx'
+import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, PageIntro, Visualization } from './components/DashboardShell.jsx'
 
 const loadCharts = () => import('./components/Charts.jsx')
 const Donut = lazy(() => loadCharts().then((module) => ({ default: module.Donut })))
@@ -98,8 +97,19 @@ function percent(part, total) {
   return denominator ? `${Math.round((Number(part || 0) / denominator) * 100)}%` : '0%'
 }
 
+// Rows keep their raw name for the API; only the displayed name is normalized.
+function renamed(rows, format) {
+  return (rows || []).map((row) => ({ ...row, name: format(row.name) }))
+}
+
+// Columns of the screen-reader table that accompanies each chart.
+function countColumns(nameLabel, valueKey = 'totalInterns', valueLabel = 'Interns') {
+  return [{ key: 'name', label: nameLabel }, { key: valueKey, label: valueLabel, num: true }]
+}
+
 function Overview({ data }) {
   const overview = data.overview || {}
+  const regions = renamed(overview.internsByRegion, shortRegionName)
   const topCountry = overview.internsByCountry?.[0]
   const topProgram = overview.internsByProgram?.[0]
   const totalInterns = Number(overview.totalInterns || 0)
@@ -112,33 +122,33 @@ function Overview({ data }) {
   return (
     <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <KpiCard icon={Users} tone="blue" label="Total interns" value={n(overview.totalInterns)} hint="People in the current selection" />
-        <KpiCard icon={FileCheck2} tone="violet" label="Endorsements" value={n(overview.totalEndorsements)} hint="Unique endorsement records" />
-        <KpiCard icon={Activity} tone="green" label="Active today" value={n(overview.activeInternshipsToday)} hint="Internships active on this date" />
-        <KpiCard icon={Clock3} tone="amber" label="Average lead time" value={n(overview.avgLeadTimeDays, 1)} suffix="days" hint="Endorsement to internship start" />
-        <KpiCard icon={CalendarClock} tone="slate" label="Average duration" value={n(overview.avgDurationWorkHours, 0)} suffix="hours" hint="Weekdays multiplied by 8 hours" />
+        <KpiCard icon={Users} label="Total interns" value={n(overview.totalInterns)} hint="People in the current selection" />
+        <KpiCard icon={FileCheck2} label="Endorsements" value={n(overview.totalEndorsements)} hint="Unique endorsement records" />
+        <KpiCard icon={Activity} label="Active today" value={n(overview.activeInternshipsToday)} hint="Internships active on this date" />
+        <KpiCard icon={Clock3} label="Average lead time" value={n(overview.avgLeadTimeDays, 1)} suffix="days" hint="Endorsement to internship start" />
+        <KpiCard icon={CalendarClock} label="Average duration" value={n(overview.avgDurationWorkHours, 0)} suffix="hours" hint="Weekdays multiplied by 8 hours" />
       </div>
 
       <InsightSummary items={insights} />
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="Interns by region" subtitle="Sorted for easier comparison">
-          <Visualization data={overview.internsByRegion} height={320} label="Horizontal bar chart of interns by region" emptyTitle="No regional data">
-            <HorizontalBars data={overview.internsByRegion || []} height={320} color="#2563eb" />
+          <Visualization data={regions} height={320} label="Horizontal bar chart of interns by region" emptyTitle="No regional data" columns={countColumns('Region')}>
+            <HorizontalBars data={regions} height={320} color="#2563eb" />
           </Visualization>
         </Panel>
         <Panel title="Interns by destination" subtitle="Top destination countries">
-          <Visualization data={overview.internsByCountry} height={320} label="Horizontal bar chart of interns by destination country" emptyTitle="No destination data">
+          <Visualization data={overview.internsByCountry} height={320} label="Horizontal bar chart of interns by destination country" emptyTitle="No destination data" columns={countColumns('Country')}>
             <HorizontalBars data={overview.internsByCountry || []} height={320} color="#0f766e" />
           </Visualization>
         </Panel>
         <Panel title="Programs represented" subtitle="Programs with the most participating interns">
-          <Visualization data={overview.internsByProgram} height={360} label="Horizontal bar chart of interns by academic program" emptyTitle="No program data">
+          <Visualization data={overview.internsByProgram} height={360} label="Horizontal bar chart of interns by academic program" emptyTitle="No program data" columns={countColumns('Program')}>
             <HorizontalBars data={overview.internsByProgram || []} height={360} color="#7c3aed" labelWidth={200} labelLimit={40} tickFormat={shortProgramName} />
           </Visualization>
         </Panel>
         <Panel title="Endorsement activity" subtitle="Unique endorsements by month">
-          <Visualization data={overview.endorsementsByMonth} height={300} label="Monthly endorsement bar chart" emptyTitle="No endorsement activity">
+          <Visualization data={overview.endorsementsByMonth} height={300} label="Monthly endorsement bar chart" emptyTitle="No endorsement activity" columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'totalEndorsements', label: 'Endorsements', num: true }]}>
             <EndorsementMonths data={overview.endorsementsByMonth || []} />
           </Visualization>
           <DefinitionNote>Each endorsement number is counted once within its endorsement month.</DefinitionNote>
@@ -153,10 +163,10 @@ function Timeline({ data }) {
   const laterWindow = Math.max(0, Number(timeline.endingNext60Days || 0) - Number(timeline.endingNext30Days || 0))
   return (
     <div className="grid gap-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={CalendarClock} tone="amber" label="Ending within 30 days" value={n(timeline.endingNext30Days)} hint="Includes internships ending today" />
-        <KpiCard icon={TimerReset} tone="blue" label="Ending within 60 days" value={n(timeline.endingNext60Days)} hint="Cumulative 60-day outlook" />
-        <KpiCard icon={CheckCircle2} tone="green" label="Days 31–60" value={n(laterWindow)} hint="Expected after the first 30 days" />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <KpiCard icon={CalendarClock} label="Ending within 30 days" value={n(timeline.endingNext30Days)} hint="Includes internships ending today" />
+        <KpiCard icon={TimerReset} label="Ending within 60 days" value={n(timeline.endingNext60Days)} hint="Cumulative 60-day outlook" />
+        <KpiCard icon={CheckCircle2} label="Days 31–60" value={n(laterWindow)} hint="Expected after the first 30 days" />
       </div>
 
       <InsightSummary items={[
@@ -165,7 +175,13 @@ function Timeline({ data }) {
       ]} />
 
       <Panel title="Starts and completions over time" subtitle="Monthly internship movement">
-        <Visualization data={timeline.startsEndsByMonth} height={320} label="Line chart comparing monthly internship starts and completions" emptyTitle="No timeline activity">
+        <Visualization
+          data={timeline.startsEndsByMonth}
+          height={320}
+          label="Line chart comparing monthly internship starts and completions"
+          emptyTitle="No timeline activity"
+          columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'internStarts', label: 'Intern starts', num: true }, { key: 'internEnds', label: 'Intern completions', num: true }]}
+        >
           <MonthLine data={timeline.startsEndsByMonth || []} />
         </Visualization>
       </Panel>
@@ -193,6 +209,10 @@ function HeiRisk({ data }) {
   const totalInterns = Number(hei.totalInterns ?? data.overview?.totalInterns ?? charted.reduce((sum, row) => sum + Number(row.totalInterns || 0), 0))
   const institutions = Number(hei.totalHeis ?? tableRows.length)
   const tableIsTopSubset = institutions > tableRows.length
+  const regions = renamed(hei.endorsementsByRegion, shortRegionName)
+  const sexes = renamed(hei.bySex, sexLabel)
+  const heiTypes = renamed(hei.byTypeOfHei, (type) => (/^unknown$/i.test(String(type).trim()) ? 'Not specified' : type))
+  const mixCountries = countries.filter((country) => (hei.endorsementsByHeiCountry || []).some((row) => Number(row[country]) > 0))
   return (
     <div className="grid gap-5">
       <InsightSummary items={[
@@ -202,30 +222,36 @@ function HeiRisk({ data }) {
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="Interns by HEI" subtitle={institutions > charted.length ? `Top ${n(charted.length)} of ${n(institutions)} institutions` : 'Largest participating institutions first'}>
-          <Visualization data={hei.internsByHei} height={380} label="Horizontal bar chart of interns by higher education institution" emptyTitle="No HEI participation data">
+          <Visualization data={hei.internsByHei} height={380} label="Horizontal bar chart of interns by higher education institution" emptyTitle="No HEI participation data" columns={countColumns('Higher education institution')}>
             <HorizontalBars data={hei.internsByHei || []} height={380} color="#2563eb" />
           </Visualization>
         </Panel>
         <Panel title="Destination mix by HEI" subtitle="Share of endorsements across destination countries">
-          <Visualization data={hei.endorsementsByHeiCountry} height={340} label="Stacked percentage bars showing country mix by HEI" emptyTitle="No HEI destination data">
+          <Visualization
+            data={hei.endorsementsByHeiCountry}
+            height={340}
+            label="Stacked percentage bars showing country mix by HEI"
+            emptyTitle="No HEI destination data"
+            columns={[{ key: 'name', label: 'Higher education institution' }, ...mixCountries.map((country) => ({ key: country, label: `${country} endorsements`, num: true }))]}
+          >
             <StackedHeiCountryBars data={hei.endorsementsByHeiCountry || []} countries={countries} />
           </Visualization>
           <DefinitionNote>A concentrated bar suggests greater reliance on one destination country.</DefinitionNote>
         </Panel>
         <Panel title="Endorsements by region" subtitle="Regional contribution to endorsements">
-          <Visualization data={hei.endorsementsByRegion} height={320} label="Horizontal bar chart of endorsements by region" emptyTitle="No regional endorsement data">
-            <HorizontalBars data={hei.endorsementsByRegion || []} valueKey="totalEndorsements" height={320} color="#7c3aed" />
+          <Visualization data={regions} height={320} label="Horizontal bar chart of endorsements by region" emptyTitle="No regional endorsement data" columns={countColumns('Region', 'totalEndorsements', 'Endorsements')}>
+            <HorizontalBars data={regions} valueKey="totalEndorsements" height={320} color="#7c3aed" />
           </Visualization>
         </Panel>
         <div className="grid gap-5 sm:grid-cols-2">
           <Panel title="Interns by sex" className="min-w-0">
-            <Visualization data={hei.bySex} label="Donut chart of interns by sex" emptyTitle="No sex distribution data">
-              <Donut data={hei.bySex || []} />
+            <Visualization data={sexes} label="Donut chart of interns by sex" emptyTitle="No sex distribution data" columns={countColumns('Sex')}>
+              <Donut data={sexes} />
             </Visualization>
           </Panel>
           <Panel title="HEI type" className="min-w-0">
-            <Visualization data={hei.byTypeOfHei} label="Donut chart of interns by HEI type" emptyTitle="No HEI type data">
-              <Donut data={hei.byTypeOfHei || []} />
+            <Visualization data={heiTypes} label="Donut chart of interns by HEI type" emptyTitle="No HEI type data" columns={countColumns('HEI type')}>
+              <Donut data={heiTypes} />
             </Visualization>
           </Panel>
         </div>
@@ -259,18 +285,24 @@ function Geography({ data }) {
       ]} />
 
       <Panel title="Internship flow map" subtitle="Origin-to-destination routes sized by intern volume">
-        <Visualization data={geography.routes} height={400} label="Map of internship routes" emptyTitle="No routes can be mapped">
+        <Visualization
+          data={geography.routes}
+          height={400}
+          label="Map of internship routes"
+          emptyTitle="No routes can be mapped"
+          columns={[{ key: 'origin', label: 'From' }, { key: 'destination', label: 'To' }, { key: 'country', label: 'Country' }, { key: 'totalInterns', label: 'Interns', num: true }]}
+        >
           <RouteMap routes={geography.routes || []} />
         </Visualization>
       </Panel>
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="Interns by destination" subtitle="Countries ranked by intern volume">
-          <Visualization data={geography.internsByCountry} height={340} label="Horizontal bar chart of interns by destination" emptyTitle="No destination data">
+          <Visualization data={geography.internsByCountry} height={340} label="Horizontal bar chart of interns by destination" emptyTitle="No destination data" columns={countColumns('Country')}>
             <HorizontalBars data={geography.internsByCountry || []} height={340} color="#0f766e" />
           </Visualization>
         </Panel>
         <Panel title="Host organizations" subtitle="Organizations receiving the most interns">
-          <Visualization data={geography.hosts} height={380} label="Horizontal bar chart of interns by host organization" emptyTitle="No host organization data">
+          <Visualization data={geography.hosts} height={380} label="Horizontal bar chart of interns by host organization" emptyTitle="No host organization data" columns={countColumns('Host organization')}>
             <HorizontalBars data={geography.hosts || []} height={380} color="#2563eb" />
           </Visualization>
         </Panel>
@@ -351,7 +383,10 @@ function SiapDashboard() {
         setLastUpdatedAt(response.lastUpdatedAt || '')
       })
       .catch((requestError) => {
-        if (isCurrent) setError(requestError?.message || 'Unable to load dashboard.')
+        if (!isCurrent) return
+        // The technical cause is for the console; readers get the same message as the other dashboards.
+        console.error('SIAP dashboard request failed:', requestError)
+        setError('The data service did not respond. Try again in a moment.')
       })
       .finally(() => {
         if (isCurrent) setRequestLoading(false)
@@ -378,8 +413,8 @@ function SiapDashboard() {
     { key: 'year', label: 'Year', options: options.years || [] },
     { key: 'quarter', label: 'Quarter', options: ['Q1', 'Q2', 'Q3', 'Q4'] },
     { key: 'country', label: 'Country', options: options.countries || [] },
-    { key: 'region', label: 'Region', options: options.regions || [] },
-    { key: 'sex', label: 'Sex', options: options.sexes || [] },
+    { key: 'region', label: 'Region', options: options.regions || [], format: shortRegionName },
+    { key: 'sex', label: 'Sex', options: options.sexes || [], format: sexLabel },
   ]
 
   return (
@@ -387,8 +422,7 @@ function SiapDashboard() {
       <Header
         activeView="siap"
         title="SIAP Analytics"
-        statusLabel="Last synchronized"
-        statusValue={lastUpdatedAt || 'Waiting for data'}
+        dataAsOf={formatDataDate(lastUpdatedAt)}
         loading={loading}
         onRefresh={refreshActiveSection}
         showRefresh={Boolean(section)}
@@ -410,15 +444,7 @@ function SiapDashboard() {
         <section className="mt-6" aria-busy={loading} aria-labelledby={`tab-${tab}`}>
           <SectionIntro tab={tab} filters={filters} />
 
-          {error ? (
-            <div role="alert" className="mt-5 flex flex-col gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 shrink-0" size={20} aria-hidden="true" />
-                <div><p className="text-sm font-bold">Dashboard data could not be loaded</p><p className="mt-1 text-sm text-red-700">{error}</p></div>
-              </div>
-              <button type="button" onClick={refreshActiveSection} className="min-h-10 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200">Try again</button>
-            </div>
-          ) : null}
+          {error ? <ErrorAlert title="SIAP data could not be loaded" message={error} onRetry={refreshActiveSection} /> : null}
 
           <div
             id={`panel-${tab}`}
@@ -451,7 +477,7 @@ function ViewFallback({ viewId }) {
   const view = DASHBOARD_VIEWS.find((item) => item.id === viewId)
   return (
     <>
-      <Header activeView={viewId} title={view.title} statusLabel="Status" statusValue="Loading..." />
+      <Header activeView={viewId} title={view.title} />
       <main className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6 sm:pb-7 lg:px-8" role="status" aria-label={`Loading ${view.title}`}>
         <div className="skeleton h-28 rounded-2xl" />
         <div className="mt-7 grid gap-5 xl:grid-cols-2"><div className="skeleton h-96 rounded-2xl" /><div className="skeleton h-96 rounded-2xl" /></div>

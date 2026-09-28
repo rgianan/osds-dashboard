@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ListChecks } from 'lucide-react'
-import { n } from '../lib/format.js'
-import { formatPublishedDate, reportTable, useReport } from '../lib/useReport.js'
+import { formatDataDate, n } from '../lib/format.js'
+import { reportTable, useReport } from '../lib/useReport.js'
 import { KpiCard, Panel } from './Panel.jsx'
 import { DefinitionNote, ErrorAlert, Header, PageIntro } from './DashboardShell.jsx'
 
@@ -36,12 +36,7 @@ export default function AntiHazingDashboard() {
 
   return (
     <>
-      <Header
-        activeView="anti-hazing"
-        title="Anti-Hazing Law (RA 11053)"
-        statusLabel="Last published"
-        statusValue={report ? formatPublishedDate(report.publishedAt) || 'Unknown' : 'Loading...'}
-      />
+      <Header activeView="anti-hazing" title="Anti-Hazing Law (RA 11053)" dataAsOf={formatDataDate(report?.publishedAt)} />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <section aria-busy={!report && !error} aria-labelledby="anti-hazing-title">
@@ -63,9 +58,9 @@ export default function AntiHazingDashboard() {
           {table ? (
             <div className="section-enter mt-5 grid gap-5">
               <div className="grid gap-3 sm:grid-cols-3">
-                <KpiCard icon={ArrowUp} tone="green" label="Most reported measure" value={n(highest.value)} suffix="positive responses" hint={highest.label} />
-                <KpiCard icon={ArrowDown} tone="amber" label="Least reported measure" value={n(lowest.value)} suffix="positive responses" hint={lowest.label} />
-                <KpiCard icon={ListChecks} tone="blue" label="Indicators tracked" value={n(rows.length)} hint="Implementation measures in the report" />
+                <KpiCard icon={ArrowUp} label="Most reported measure" value={n(highest.value)} suffix="positive responses" hint={highest.label} />
+                <KpiCard icon={ArrowDown} label="Least reported measure" value={n(lowest.value)} suffix="positive responses" hint={lowest.label} />
+                <KpiCard icon={ListChecks} label="Indicators tracked" value={n(rows.length)} hint="Implementation measures in the report" />
               </div>
 
               <Panel title="Positive responses by indicator" subtitle="In the order of the report">
