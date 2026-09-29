@@ -8,7 +8,7 @@ import { DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, PageIntro, V
 const HorizontalBars = lazy(() => import('./Charts.jsx').then((module) => ({ default: module.HorizontalBars })))
 const PhilippinesCityMap = lazy(() => import('./PhilippinesCityMap.jsx').then((module) => ({ default: module.PhilippinesCityMap })))
 
-const DEFAULT_FILTERS = { academicYear: '', nationality: '', region: '', sex: '', heiType: '', city: '', province: '' }
+const DEFAULT_FILTERS = { academicYear: '', nationality: '', region: '', sex: '', heiType: '', city: '', province: '', hei: '' }
 const TOP_NATIONALITIES = 15
 const NOT_SPECIFIED = 'Not specified'
 // Labels in the nationality list that are not a single nationality.
@@ -37,9 +37,17 @@ function cityLabels(cities = []) {
   return cities.map((city) => (repeats.get(city.name) > 1 ? `${city.name}, ${city.province}` : city.name))
 }
 
+// Alphabetical regardless of case, so "Adamson University" sorts before "AMA School of Medicine".
+const byName = (a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })
+
+// HEIs are { code, name }: the filter shows the name, the count uses the code.
+function heiNames(heis = []) {
+  return heis.map((hei) => hei.name)
+}
+
 function summarize({ meta, dimensions, cells }, filters) {
   const positions = Object.fromEntries(meta.cellFields.map((field, index) => [field, index]))
-  const optionLabels = { ...dimensions, city: cityLabels(dimensions.city) }
+  const optionLabels = { ...dimensions, city: cityLabels(dimensions.city), hei: heiNames(dimensions.hei) }
   const active = Object.keys(DEFAULT_FILTERS)
     .filter((key) => filters[key])
     .map((key) => [positions[key], new Set(optionLabels[key].flatMap((option, index) => (option === filters[key] ? [index] : [])))])
@@ -57,7 +65,7 @@ function summarize({ meta, dimensions, cells }, filters) {
     byRegion[row[positions.region]] += count
     byNationality[row[positions.nationality]] += count
     byCity[row[positions.city]] += count
-    heis?.add(dimensions.hei[row[positions.hei]])
+    heis?.add(dimensions.hei[row[positions.hei]].code)
   }
   heis?.delete(NOT_SPECIFIED)
 
@@ -102,8 +110,9 @@ export default function ForeignStudentsDashboard() {
     { key: 'region', label: 'Region', allLabel: 'All regions', options: data?.dimensions.region || [], format: shortRegionName },
     { key: 'sex', label: 'Sex', allLabel: 'All', options: data?.dimensions.sex || [] },
     { key: 'heiType', label: 'HEI type', allLabel: 'All HEI types', options: data?.dimensions.heiType || [] },
-    { key: 'city', label: 'City', allLabel: 'All cities', options: [...new Set(cityLabels(data?.dimensions.city))].sort() },
+    { key: 'city', label: 'City', allLabel: 'All cities', options: [...new Set(cityLabels(data?.dimensions.city))].sort(byName) },
     { key: 'province', label: 'Province', allLabel: 'All provinces', options: data?.dimensions.province || [] },
+    { key: 'hei', label: 'HEI', allLabel: 'All HEIs', options: heiNames(data?.dimensions.hei).filter((name) => name !== NOT_SPECIFIED).sort(byName) },
   ]
   const totalHint = filters.academicYear
     ? `Enrolled in academic year ${filters.academicYear}`

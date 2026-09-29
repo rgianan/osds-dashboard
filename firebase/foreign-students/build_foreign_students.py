@@ -8,8 +8,8 @@ The workbook can contain personal data (dates of birth, addresses). This script
 reads only academic year, region, sex, nationality, HEI type, the HEI's city and
 province, and the HEI's institution code, and writes counts per combination of
 those fields to foreign-students.json next to this script. No row-level record
-is written. HEI names are not written; the code only lets the dashboard count
-distinct HEIs.
+is written. Each HEI is written as its institution code and its name from the
+HEI list (Sheet2), for the HEI filter and the distinct-HEI count.
 
 HEI cities are geocoded once through OpenStreetMap Nominatim (city and province
 names only) and cached in ph-city-coordinates.json, so later builds run offline.
@@ -51,6 +51,7 @@ MIN_HEI_MATCH = 0.9
 DATA_SHEET = "data"
 HEI_SHEET = "Sheet2"
 HEI_SHEET_HEADERS = {"hei": "UII", "city": "City/Municipality", "province": "Province"}
+HEI_SHEET_NAME = "HEI Name"
 HEI_CODE_DIGITS = 5
 
 SEX_LABELS = {"m": "Male", "male": "Male", "f": "Female", "female": "Female"}
@@ -115,16 +116,20 @@ def _hei_reference(workbook):
         sys.exit(f"Sheet '{HEI_SHEET}' (the HEI list) is required to identify the HEI city and province columns.")
     rows = (cells for _, cells in workbook.rows(HEI_SHEET))
     header = next(rows, {})
-    indexes = {key: next((i for i, h in header.items() if _clean(h) == name), None) for key, name in HEI_SHEET_HEADERS.items()}
-    missing = [HEI_SHEET_HEADERS[key] for key, index in indexes.items() if index is None]
+    columns = {**HEI_SHEET_HEADERS, "name": HEI_SHEET_NAME}
+    indexes = {key: next((i for i, h in header.items() if _clean(h) == name), None) for key, name in columns.items()}
+    missing = [columns[key] for key, index in indexes.items() if index is None]
     if missing:
         sys.exit(f"Sheet '{HEI_SHEET}' is missing column(s): {', '.join(missing)}")
-    values = {key: set() for key in indexes}
+    values = {key: set() for key in HEI_SHEET_HEADERS}
+    names = {}
     for row in rows:
-        for key, index in indexes.items():
-            if row.get(index):
-                values[key].add(_clean(row[index]).lower())
-    return values
+        for key in HEI_SHEET_HEADERS:
+            if row.get(indexes[key]):
+                values[key].add(_clean(row[indexes[key]]).lower())
+        if row.get(indexes["hei"]) and row.get(indexes["name"]):
+            names.setdefault(_hei_code(row[indexes["hei"]]), _clean(row[indexes["name"]]))
+    return values, names
 
 
 def _best_match_column(rows, header_row, reference, label):
@@ -266,7 +271,7 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     with Workbook(xlsx_path) as workbook:
         if DATA_SHEET not in workbook.sheet_names:
             sys.exit(f"Sheet '{DATA_SHEET}' not found. Sheets: {', '.join(workbook.sheet_names)}")
-        reference = _hei_reference(workbook)
+        reference, hei_names = _hei_reference(workbook)
         data_rows = (cells for _, cells in workbook.rows(DATA_SHEET))
         header_row = next(data_rows)
         rows = [row for row in data_rows if row]
@@ -319,8 +324,8 @@ def build(xlsx_path, out_path, coords_path, allow_network):
                 {"name": c, "province": p, "lat": coords.get(f"{c}|{p}", {}).get("lat"), "lng": coords.get(f"{c}|{p}", {}).get("lng")}
                 for c, p in cities
             ],
-            # Institution codes (UII) only, so distinct HEIs can be counted.
-            "hei": heis,
+            # A code missing from the HEI list keeps the code as its name (reported below).
+            "hei": [{"code": code, "name": hei_names.get(code, code)} for code in heis],
         },
         "cells": [
             [index["y"][y], index["r"][r], index["s"][s], index["n"][n], index["h"][h], index["c"][(c, p)], index["p"][p], index["i"][i], count]
@@ -338,6 +343,9 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     print(f"Dimensions: {len(years)} years, {len(regions)} regions, {len(sexes)} sexes, {len(nationalities)} nationalities, "
           f"{len(hei_types)} HEI types, {len(cities)} city/province locations, {len(provinces)} provinces, {len(heis)} HEIs")
     print(f"Records at cities without coordinates: {unmapped:,}")
+    unnamed = [code for code in heis if code != NOT_SPECIFIED and code not in hei_names]
+    if unnamed:
+        print(f"HEI codes not in {HEI_SHEET}, shown by code: {', '.join(unnamed)}")
     print(f"Nationality spellings merged: {merged} ({len(raw_nationalities)} raw -> {len(nationalities)} labels)")
     if review:
         print(f"\nCoordinates to review in {coords_path.name}:")

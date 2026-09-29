@@ -12,8 +12,8 @@ export const DASHBOARD_VIEWS = [
 // The page shown when the URL has no #/<id> route.
 export const DEFAULT_VIEW_ID = DASHBOARD_VIEWS.find((view) => !view.hidden).id
 
-// Seven filters in one row were too narrow to read, so they wrap to four and three.
-const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-3 xl:grid-cols-6', 7: 'lg:grid-cols-4' }
+// Seven or eight filters in one row were too narrow to read, so they wrap to rows of four.
+const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-3 xl:grid-cols-6', 7: 'lg:grid-cols-4', 8: 'lg:grid-cols-4' }
 
 export function EmptyState({ title = 'No data for this view', message = 'Try broadening or clearing the selected filters.', compact = false }) {
   return (

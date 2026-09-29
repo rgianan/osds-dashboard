@@ -9,8 +9,19 @@
 
 export const CONFIG_DOC = 'config/foreignStudents'
 export const DATASET_COLLECTION = 'foreignStudentsDatasets'
-export const FILTER_FIELDS = ['academicYear', 'region', 'sex', 'nationality', 'heiType', 'city', 'province']
+export const FILTER_FIELDS = ['academicYear', 'region', 'sex', 'nationality', 'heiType', 'city', 'province', 'hei']
 export const FORMATS = ['summary', 'cube', 'dimensions']
+const NOT_SPECIFIED = 'Not specified'
+
+// City options are { name, province, lat, lng } and HEI options { code, name }; both
+// are filtered by name. Every other dimension is a list of plain values.
+function optionLabel(field, option) {
+  return (field === 'city' || field === 'hei') && typeof option === 'object' ? option.name : option
+}
+
+function heiCode(option) {
+  return typeof option === 'object' && option ? option.code : option
+}
 
 const CONFIG_TTL_MS = 60 * 1000
 
@@ -54,9 +65,11 @@ export function parseQuery(query = {}, dimensions) {
     const value = String(query[field] ?? '').trim()
     if (!value) continue
     const options = dimensions[field] || []
-    const index = options.findIndex((option) => String(field === 'city' ? option.name : option).toLowerCase() === value.toLowerCase())
+    const wanted = value.toLowerCase()
+    // An HEI can also be given by its institution code.
+    const index = options.findIndex((option) => String(optionLabel(field, option)).toLowerCase() === wanted || (field === 'hei' && String(heiCode(option)).toLowerCase() === wanted))
     if (index < 0) throw httpError(400, `Unknown ${field} "${value}". Request format=dimensions for the valid values.`)
-    filters[field] = field === 'city' ? options[index].name : options[index]
+    filters[field] = optionLabel(field, options[index])
   }
   return { format, filters }
 }
@@ -65,7 +78,7 @@ function matchingCells(dataset, filters) {
   const positions = Object.fromEntries(dataset.meta.cellFields.map((field, index) => [field, index]))
   const active = Object.entries(filters).map(([field, value]) => {
     const options = dataset.dimensions[field]
-    const indexes = options.flatMap((option, index) => ((field === 'city' ? option.name : option) === value ? [index] : []))
+    const indexes = options.flatMap((option, index) => (optionLabel(field, option) === value ? [index] : []))
     return [positions[field], new Set(indexes)]
   })
   return dataset.cells.filter((cell) => active.every(([position, indexes]) => indexes.has(cell[position])))
@@ -90,9 +103,9 @@ export function summarize(dataset, filters = {}) {
   for (const cell of matchingCells(dataset, filters)) {
     total += cell[countPosition]
     for (const field of summaryFields) totals[field][cell[positions[field]]] += cell[countPosition]
-    heis?.add(dimensions.hei[cell[positions.hei]])
+    heis?.add(heiCode(dimensions.hei[cell[positions.hei]]))
   }
-  heis?.delete('Not specified')
+  heis?.delete(NOT_SPECIFIED)
   return {
     total,
     heiCount: heis ? heis.size : null,
@@ -111,8 +124,15 @@ export function buildResponse(dataset, version, query) {
   const { format, filters } = parseQuery(query, dataset.dimensions)
   const base = { ok: true, version, generatedAt: dataset.meta.generatedAt, totalRecords: dataset.meta.totalRecords, countBasis: 'Enrollment records per academic year' }
   if (format === 'dimensions') {
-    const { city, ...filterValues } = dataset.dimensions
-    return { ...base, dimensions: { ...filterValues, city: [...new Set(city.map((item) => item.name))].sort() }, cities: city }
+    // dimensions lists the values each filter accepts; cities and heis carry the details.
+    const { city, hei = [], ...filterValues } = dataset.dimensions
+    const heis = hei.filter((item) => heiCode(item) !== NOT_SPECIFIED)
+    return {
+      ...base,
+      dimensions: { ...filterValues, city: [...new Set(city.map((item) => item.name))].sort(), hei: heis.map((item) => optionLabel('hei', item)).sort() },
+      cities: city,
+      heis,
+    }
   }
   if (format === 'cube') {
     return { ...base, filters, meta: dataset.meta, dimensions: dataset.dimensions, cells: matchingCells(dataset, filters) }
