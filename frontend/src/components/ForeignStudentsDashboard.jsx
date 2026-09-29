@@ -109,10 +109,10 @@ export default function ForeignStudentsDashboard() {
     { key: 'nationality', label: 'Nationality', allLabel: 'All nationalities', options: data?.dimensions.nationality || [] },
     { key: 'region', label: 'Region', allLabel: 'All regions', options: data?.dimensions.region || [], format: shortRegionName },
     { key: 'sex', label: 'Sex', allLabel: 'All', options: data?.dimensions.sex || [] },
+    { key: 'hei', label: 'HEI', allLabel: 'All HEIs', options: heiNames(data?.dimensions.hei).filter((name) => name !== NOT_SPECIFIED).sort(byName) },
     { key: 'heiType', label: 'HEI type', allLabel: 'All HEI types', options: data?.dimensions.heiType || [] },
     { key: 'city', label: 'City', allLabel: 'All cities', options: [...new Set(cityLabels(data?.dimensions.city))].sort(byName) },
     { key: 'province', label: 'Province', allLabel: 'All provinces', options: data?.dimensions.province || [] },
-    { key: 'hei', label: 'HEI', allLabel: 'All HEIs', options: heiNames(data?.dimensions.hei).filter((name) => name !== NOT_SPECIFIED).sort(byName) },
   ]
   const totalHint = filters.academicYear
     ? `Enrolled in academic year ${filters.academicYear}`
