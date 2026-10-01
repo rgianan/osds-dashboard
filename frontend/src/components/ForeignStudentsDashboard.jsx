@@ -54,13 +54,20 @@ function summarize({ meta, dimensions, cells }, filters) {
   const byRegion = new Array(dimensions.region.length).fill(0)
   const byNationality = new Array(dimensions.nationality.length).fill(0)
   const byCity = new Array(dimensions.city.length).fill(0)
+  // The trend by year ignores the year filter, so it always shows every year for the
+  // other filters and the selected year can be read against the rest.
+  const byYear = new Array(dimensions.academicYear.length).fill(0)
+  const yearFilter = active.find(([position]) => position === positions.academicYear)
+  const otherFilters = active.filter((filter) => filter !== yearFilter)
   // Datasets published before the HEI code was added have no hei field.
   const heis = positions.hei == null ? null : new Set()
   let total = 0
 
   for (const row of cells) {
-    if (active.some(([position, indexes]) => !indexes.has(row[position]))) continue
+    if (otherFilters.some(([position, indexes]) => !indexes.has(row[position]))) continue
     const count = row[positions.count]
+    byYear[row[positions.academicYear]] += count
+    if (yearFilter && !yearFilter[1].has(row[positions.academicYear])) continue
     total += count
     byRegion[row[positions.region]] += count
     byNationality[row[positions.nationality]] += count
@@ -76,6 +83,7 @@ function summarize({ meta, dimensions, cells }, filters) {
     total,
     heiCount: heis ? heis.size : null,
     cityCount: cities.length,
+    years: dimensions.academicYear.map((name, index) => ({ name, totalStudents: byYear[index] })),
     regions: ranked(dimensions.region, byRegion, shortRegionName),
     nationalities: nationalities.slice(0, TOP_NATIONALITIES),
     nationalityCount: nationalities.filter((row) => !NOT_A_NATIONALITY.has(row.name)).length,
@@ -83,6 +91,37 @@ function summarize({ meta, dimensions, cells }, filters) {
     cities: cities.filter(isMapped).sort((a, b) => b.totalStudents - a.totalStudents),
     unmappedStudents: cities.filter((city) => !isMapped(city)).reduce((sum, city) => sum + city.totalStudents, 0),
   }
+}
+
+// "2020-2021" -> "2020-21"
+function shortYear(year) {
+  return String(year).replace(/^(\d{4})-\d{2}(\d{2})$/, '$1-$2')
+}
+
+// Five small bars beside the total: the page covers several academic years, and without
+// this the years exist only as a filter. A selected year stays solid; the others fade.
+function YearTrend({ years, selected }) {
+  if (years.length < 2) return null
+  const max = Math.max(1, ...years.map((year) => year.totalStudents))
+  return (
+    <div className="w-28 shrink-0 sm:w-32">
+      <div className="flex h-8 items-end gap-1" aria-hidden="true">
+        {years.map((year) => (
+          <div
+            key={year.name}
+            title={`${year.name}: ${n(year.totalStudents)}`}
+            className={`flex-1 rounded-t-sm bg-blue-600 ${selected && selected !== year.name ? 'opacity-30' : ''}`}
+            style={{ height: `${Math.max(6, (year.totalStudents / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-xs leading-4 text-slate-500" aria-hidden="true">
+        <span>{shortYear(years[0].name)}</span>
+        <span>{shortYear(years[years.length - 1].name)}</span>
+      </div>
+      <p className="sr-only">Students by academic year: {years.map((year) => `${year.name}, ${n(year.totalStudents)}`).join('; ')}.</p>
+    </div>
+  )
 }
 
 export default function ForeignStudentsDashboard() {
@@ -124,23 +163,26 @@ export default function ForeignStudentsDashboard() {
       <Header activeView="foreign-students" title="Foreign Students Data" dataAsOf={formatDataDate(data?.generatedAt)} />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
-        <FilterBar
-          fields={fields}
-          filters={filters}
-          onChange={(key, value) => setFilters((current) => ({ ...current, [key]: value }))}
-          onClear={() => setFilters(DEFAULT_FILTERS)}
-          open={filtersOpen}
-          onToggle={() => setFiltersOpen((current) => !current)}
+        {/* Every page reads in one order: what this page is, then the filters, then the data. */}
+        <PageIntro
+          titleId="foreign-students-title"
+          title="Foreign students in Philippine HEIs"
+          description={`Enrollment records reported by higher education institutions${yearRange}.`}
+          aside={activeFilterCount ? `View refined by ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'All records included'}
         />
 
-        <section className="mt-6" aria-busy={!data && !error} aria-labelledby="foreign-students-title">
-          <PageIntro
-            titleId="foreign-students-title"
-            title="Foreign students in Philippine HEIs"
-            description={`Enrollment records reported by higher education institutions${yearRange}.`}
-            aside={activeFilterCount ? `View refined by ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'All records included'}
+        <div className="mt-4">
+          <FilterBar
+            fields={fields}
+            filters={filters}
+            onChange={(key, value) => setFilters((current) => ({ ...current, [key]: value }))}
+            onClear={() => setFilters(DEFAULT_FILTERS)}
+            open={filtersOpen}
+            onToggle={() => setFiltersOpen((current) => !current)}
           />
+        </div>
 
+        <section aria-busy={!data && !error} aria-labelledby="foreign-students-title">
           {error ? <ErrorAlert title="Foreign students data could not be loaded" message={error} onRetry={() => setLoadAttempt((attempt) => attempt + 1)} /> : null}
 
           {!data && !error ? (
@@ -153,7 +195,7 @@ export default function ForeignStudentsDashboard() {
           {summary ? (
             <div className="section-enter mt-5 grid gap-5">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <KpiCard icon={Users} label="Total foreign students" value={n(summary.total)} hint={totalHint} />
+                <KpiCard icon={Users} label="Total foreign students" value={n(summary.total)} hint={totalHint} aside={<YearTrend years={summary.years} selected={filters.academicYear} />} />
                 <KpiCard
                   icon={School}
                   label="HEIs with foreign students"

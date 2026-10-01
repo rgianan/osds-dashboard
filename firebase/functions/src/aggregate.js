@@ -80,6 +80,8 @@ export function buildOverview(rows) {
     internsByRegion: groupInterns(rows, 'region', 10),
     internsByCountry: groupInterns(rows, 'country', 10),
     internsByProgram: groupInterns(rows, 'program', 12),
+    // The dashboard shows who the interns are in Overview; "hei" keeps its own copy.
+    bySex: groupInterns(rows, 'sex', 10),
     endorsementsByMonth: endorsementsByMonth(rows),
   }
 }
@@ -124,6 +126,8 @@ export function buildTimeline(rows) {
     endingNext60Days: rows.filter((row) => row.endDayMs != null && row.endDayMs >= today && row.endDayMs <= next60).length,
     countrySummary: countrySummary(rows),
     startsEndsByMonth: startsEndsByMonth(rows),
+    // Everything over time sits in the dashboard's Timeline tab; "overview" keeps its own copy.
+    endorsementsByMonth: endorsementsByMonth(rows),
   }
 }
 
@@ -213,6 +217,8 @@ export function buildGeography(rows) {
     internsByCountry: groupInterns(rows, 'country', 10),
     hosts: groupInterns(rows, 'host', 15),
     routes: routeSummary(rows),
+    // The per-destination table belongs with the destinations; "timeline" keeps its own copy.
+    countrySummary: countrySummary(rows),
   }
 }
 

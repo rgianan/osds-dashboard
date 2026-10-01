@@ -12,6 +12,8 @@ export const DASHBOARD_VIEWS = [
 // The page shown when the URL has no #/<id> route.
 export const DEFAULT_VIEW_ID = DASHBOARD_VIEWS.find((view) => !view.hidden).id
 
+const TAB_GRID_COLUMNS = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' }
+
 // Seven or eight filters in one row were too narrow to read, so they wrap to rows of four.
 const LG_GRID_COLUMNS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-3 xl:grid-cols-6', 7: 'lg:grid-cols-4', 8: 'lg:grid-cols-4' }
 
@@ -210,7 +212,8 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
 
         {tabs ? (
           <nav className="mt-3 -mb-px overflow-x-auto" aria-label="Dashboard sections">
-            <div className="flex min-w-max gap-1" role="tablist">
+            {/* Phones: four equal columns with no icons, so every tab is visible without scrolling. */}
+            <div className={`grid sm:flex sm:min-w-max sm:gap-1 ${TAB_GRID_COLUMNS[tabs.length] || 'grid-cols-4'}`} role="tablist">
               {tabs.map((item, index) => {
                 const Icon = item.icon
                 const active = tab === item.id
@@ -225,9 +228,9 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
                     tabIndex={active ? 0 : -1}
                     onClick={() => onTabChange(item.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, index)}
-                    className={`inline-flex min-h-11 items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${active ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'}`}
+                    className={`inline-flex min-h-11 items-center justify-center gap-2 border-b-2 px-1 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:justify-start sm:px-3 ${active ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'}`}
                   >
-                    <Icon size={16} aria-hidden="true" /> {item.label}
+                    <Icon size={16} className="hidden sm:block" aria-hidden="true" /> {item.label}
                   </button>
                 )
               })}
@@ -247,7 +250,9 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]" aria-labelledby="filters-title">
-      <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-5 lg:min-h-12">
+      {/* On desktop the fields are always open and the page intro above already states how
+          many filters are active, so this heading row only shows where the panel collapses. */}
+      <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
         <div className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Filter size={16} aria-hidden="true" /></span>
           <div>
@@ -267,7 +272,7 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
         </div>
       </div>
 
-      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block lg:py-3`}>
+      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block lg:border-t-0`}>
         <fieldset>
           <legend className="sr-only">Dashboard filters</legend>
           <div className={`grid gap-3 sm:grid-cols-2 ${LG_GRID_COLUMNS[fields.length] || 'lg:grid-cols-5'}`}>
@@ -284,7 +289,8 @@ export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }
                 <span className="text-blue-700">{labels[key]}:</span> {formats[key](value)} <X size={13} aria-hidden="true" />
               </button>
             ))}
-            <button type="button" onClick={onClear} className="min-h-8 rounded-full px-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 sm:hidden">Clear all</button>
+            {/* From sm to lg the heading row above carries Clear all. */}
+            <button type="button" onClick={onClear} className="min-h-8 rounded-full px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:hidden lg:inline-block">Clear all</button>
           </div>
         ) : null}
       </div>

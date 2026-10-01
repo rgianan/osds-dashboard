@@ -33,8 +33,8 @@ const VIEW_COMPONENTS = {
 
 const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
-  { id: 'overview', label: 'Overview', title: 'Executive overview', description: 'A concise view of participation, activity, and destination patterns.', icon: BarChart3 },
-  { id: 'timeline', label: 'Timeline', title: 'Internship timeline', description: 'Upcoming completions and monthly internship movement.', icon: TimerReset },
+  { id: 'overview', label: 'Overview', title: 'Executive overview', description: 'Who the interns are: where they come from, where they go, and what they study.', icon: BarChart3 },
+  { id: 'timeline', label: 'Timeline', title: 'Internship timeline', description: 'Upcoming completions, and monthly endorsements, starts, and completions.', icon: TimerReset },
   { id: 'hei', label: 'HEI risk', title: 'HEI concentration risk', description: 'Institution participation, destination mix, and concentration indicators.', icon: GraduationCap },
   { id: 'geo', label: 'Geography', title: 'Destinations and host organizations', description: 'Where interns go and which organizations receive them.', icon: Globe2 },
 ]
@@ -107,9 +107,13 @@ function countColumns(nameLabel, valueKey = 'totalInterns', valueLabel = 'Intern
   return [{ key: 'name', label: nameLabel }, { key: valueKey, label: valueLabel, num: true }]
 }
 
+// Each tab answers one question, so a chart lives where its question is asked:
+// Overview = who the interns are, Timeline = when, HEI risk = which institutions,
+// Geography = where they go.
 function Overview({ data }) {
   const overview = data.overview || {}
   const regions = renamed(overview.internsByRegion, shortRegionName)
+  const sexes = renamed(overview.bySex, sexLabel)
   const topCountry = overview.internsByCountry?.[0]
   const topProgram = overview.internsByProgram?.[0]
   const totalInterns = Number(overview.totalInterns || 0)
@@ -147,11 +151,10 @@ function Overview({ data }) {
             <HorizontalBars data={overview.internsByProgram || []} height={360} color="#7c3aed" labelWidth={200} labelLimit={40} tickFormat={shortProgramName} />
           </Visualization>
         </Panel>
-        <Panel title="Endorsement activity" subtitle="Unique endorsements by month">
-          <Visualization data={overview.endorsementsByMonth} height={300} label="Monthly endorsement bar chart" emptyTitle="No endorsement activity" columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'totalEndorsements', label: 'Endorsements', num: true }]}>
-            <EndorsementMonths data={overview.endorsementsByMonth || []} />
+        <Panel title="Interns by sex" subtitle="Share of interns in this selection">
+          <Visualization data={sexes} label="Donut chart of interns by sex" emptyTitle="No sex distribution data" columns={countColumns('Sex')}>
+            <Donut data={sexes} />
           </Visualization>
-          <DefinitionNote>Each endorsement number is counted once within its endorsement month.</DefinitionNote>
         </Panel>
       </div>
     </div>
@@ -174,26 +177,25 @@ function Timeline({ data }) {
         { label: 'Following period', title: `${n(laterWindow)} more by day 60`, detail: 'This separates near-term completions from the cumulative 60-day figure.' },
       ]} />
 
-      <Panel title="Starts and completions over time" subtitle="Monthly internship movement">
-        <Visualization
-          data={timeline.startsEndsByMonth}
-          height={320}
-          label="Line chart comparing monthly internship starts and completions"
-          emptyTitle="No timeline activity"
-          columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'internStarts', label: 'Intern starts', num: true }, { key: 'internEnds', label: 'Intern completions', num: true }]}
-        >
-          <MonthLine data={timeline.startsEndsByMonth || []} />
-        </Visualization>
-      </Panel>
-      <Panel title="Country summary" subtitle="Participation and average working duration by destination">
-        <DataTable rows={timeline.countrySummary} caption="Country internship summary" columns={[
-          { key: 'name', label: 'Country' },
-          { key: 'totalEndorsements', label: 'Endorsements', num: true, render: (row) => n(row.totalEndorsements) },
-          { key: 'totalInterns', label: 'Interns', num: true, render: (row) => n(row.totalInterns) },
-          { key: 'avgDurationWorkHours', label: 'Average hours', num: true, render: (row) => n(row.avgDurationWorkHours, 1) },
-        ]} />
-        <DefinitionNote>Average hours use weekdays only and assume an eight-hour workday.</DefinitionNote>
-      </Panel>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Starts and completions over time" subtitle="Monthly internship movement">
+          <Visualization
+            data={timeline.startsEndsByMonth}
+            height={320}
+            label="Line chart comparing monthly internship starts and completions"
+            emptyTitle="No timeline activity"
+            columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'internStarts', label: 'Intern starts', num: true }, { key: 'internEnds', label: 'Intern completions', num: true }]}
+          >
+            <MonthLine data={timeline.startsEndsByMonth || []} />
+          </Visualization>
+        </Panel>
+        <Panel title="Endorsement activity" subtitle="Unique endorsements by month">
+          <Visualization data={timeline.endorsementsByMonth} height={300} label="Monthly endorsement bar chart" emptyTitle="No endorsement activity" columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'totalEndorsements', label: 'Endorsements', num: true }]}>
+            <EndorsementMonths data={timeline.endorsementsByMonth || []} />
+          </Visualization>
+          <DefinitionNote>Each endorsement number is counted once within its endorsement month.</DefinitionNote>
+        </Panel>
+      </div>
     </div>
   )
 }
@@ -210,7 +212,6 @@ function HeiRisk({ data }) {
   const institutions = Number(hei.totalHeis ?? tableRows.length)
   const tableIsTopSubset = institutions > tableRows.length
   const regions = renamed(hei.endorsementsByRegion, shortRegionName)
-  const sexes = renamed(hei.bySex, sexLabel)
   const heiTypes = renamed(hei.byTypeOfHei, (type) => (/^unknown$/i.test(String(type).trim()) ? 'Not specified' : type))
   const mixCountries = countries.filter((country) => (hei.endorsementsByHeiCountry || []).some((row) => Number(row[country]) > 0))
   return (
@@ -243,18 +244,11 @@ function HeiRisk({ data }) {
             <HorizontalBars data={regions} valueKey="totalEndorsements" height={320} color="#7c3aed" />
           </Visualization>
         </Panel>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Panel title="Interns by sex" className="min-w-0">
-            <Visualization data={sexes} label="Donut chart of interns by sex" emptyTitle="No sex distribution data" columns={countColumns('Sex')}>
-              <Donut data={sexes} />
-            </Visualization>
-          </Panel>
-          <Panel title="HEI type" className="min-w-0">
-            <Visualization data={heiTypes} label="Donut chart of interns by HEI type" emptyTitle="No HEI type data" columns={countColumns('HEI type')}>
-              <Donut data={heiTypes} />
-            </Visualization>
-          </Panel>
-        </div>
+        <Panel title="Interns by HEI type" subtitle="Share of interns by type of institution">
+          <Visualization data={heiTypes} label="Donut chart of interns by HEI type" emptyTitle="No HEI type data" columns={countColumns('HEI type')}>
+            <Donut data={heiTypes} />
+          </Visualization>
+        </Panel>
       </div>
 
       <Panel title="HEI concentration details" subtitle={tableIsTopSubset ? `The ${n(tableRows.length)} institutions with the most interns` : 'Breadth of destinations and host organizations'}>
@@ -296,10 +290,16 @@ function Geography({ data }) {
         </Visualization>
       </Panel>
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Interns by destination" subtitle="Countries ranked by intern volume">
-          <Visualization data={geography.internsByCountry} height={340} label="Horizontal bar chart of interns by destination" emptyTitle="No destination data" columns={countColumns('Country')}>
-            <HorizontalBars data={geography.internsByCountry || []} height={340} color="#0f766e" />
-          </Visualization>
+        {/* The table replaces the destination bar chart here: it has the same ranking plus
+            endorsements and hours, and Overview already charts interns by destination. */}
+        <Panel title="Destination countries" subtitle="Interns, endorsements, and average working duration by destination">
+          <DataTable rows={geography.countrySummary} caption="Internship summary by destination country" columns={[
+            { key: 'name', label: 'Country' },
+            { key: 'totalInterns', label: 'Interns', num: true, render: (row) => n(row.totalInterns) },
+            { key: 'totalEndorsements', label: 'Endorsements', num: true, render: (row) => n(row.totalEndorsements) },
+            { key: 'avgDurationWorkHours', label: 'Average hours', num: true, render: (row) => n(row.avgDurationWorkHours, 1) },
+          ]} />
+          <DefinitionNote>Average hours use weekdays only and assume an eight-hour workday.</DefinitionNote>
         </Panel>
         <Panel title="Host organizations" subtitle="Organizations receiving the most interns">
           <Visualization data={geography.hosts} height={380} label="Horizontal bar chart of interns by host organization" emptyTitle="No host organization data" columns={countColumns('Host organization')}>
@@ -432,18 +432,19 @@ function SiapDashboard() {
       />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
-        {section ? <FilterBar
+        {/* Every page reads in one order: what this page is, then the filters, then the data. */}
+        <SectionIntro tab={tab} filters={filters} />
+
+        {section ? <div className="mt-4"><FilterBar
           fields={filterFields}
           filters={filters}
           onChange={updateFilter}
           onClear={() => setFilters(DEFAULT_FILTERS)}
           open={filtersOpen}
           onToggle={() => setFiltersOpen((current) => !current)}
-        /> : null}
+        /></div> : null}
 
-        <section className="mt-6" aria-busy={loading} aria-labelledby={`tab-${tab}`}>
-          <SectionIntro tab={tab} filters={filters} />
-
+        <section aria-busy={loading} aria-labelledby={`tab-${tab}`}>
           {error ? <ErrorAlert title="SIAP data could not be loaded" message={error} onRetry={refreshActiveSection} /> : null}
 
           <div

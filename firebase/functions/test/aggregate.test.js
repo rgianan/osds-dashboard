@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildGeography, buildHeiRisk, buildOptions, buildOverview, buildTimeline } from '../src/aggregate.js'
+import { buildGeography, buildHeiRisk, buildOptions, buildOverview, buildSection, buildTimeline } from '../src/aggregate.js'
 
 const rows = [
   { endorsementNo: 'E-1', region: 'NCR', country: 'Singapore', program: 'IT', hei: 'HEI A', typeOfHei: 'Public', sex: 'Female', host: 'Host A', filterYear: '2026', endorsementYearMonth: '2026-01', startYearMonth: '2026-02', endYearMonth: '2026-03', leadTimeDays: 7, durationWorkHours: 160, startDayMs: 0, endDayMs: 1, originLat: 14, originLng: 121, destLat: 1, destLng: 104, fromCity: 'Manila', toCity: 'Singapore' },
@@ -28,4 +28,11 @@ test('reports selection totals so shares are not divided by the charted rows', (
   assert.equal(hei.totalInterns, 3)
   assert.equal(hei.totalHeis, 2)
   assert.equal(buildGeography(rows).totalInterns, 3)
+})
+
+test('serves each chart from the section where the dashboard shows it', () => {
+  const total = (items, key = 'totalInterns') => items.reduce((sum, item) => sum + item[key], 0)
+  assert.equal(total(buildSection('overview', rows).bySex), 3)
+  assert.deepEqual(buildSection('timeline', rows).endorsementsByMonth, buildSection('overview', rows).endorsementsByMonth)
+  assert.deepEqual(buildSection('geography', rows).countrySummary, buildSection('timeline', rows).countrySummary)
 })
