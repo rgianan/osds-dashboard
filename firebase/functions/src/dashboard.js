@@ -8,16 +8,20 @@ const CACHE_SECONDS = Math.max(60, Number(process.env.DASHBOARD_CACHE_SECONDS ||
 const MEMORY_CACHE_LIMIT = 100
 const memoryCache = new Map()
 
-const SECTION_FIELDS = {
-  overview: ['endorsementNo', 'region', 'country', 'program', 'startDayMs', 'endDayMs', 'leadTimeDays', 'durationWorkHours', 'endorsementYearMonth'],
-  timeline: ['endorsementNo', 'country', 'endDayMs', 'durationWorkHours', 'startYearMonth', 'endYearMonth'],
+// Only these fields are read from Firestore for each section. A builder in aggregate.js
+// that reads a field missing here gets undefined for every row and silently reports
+// "Unknown" or zero, so the list must cover everything the section's builder reads
+// (test/aggregate.test.js checks this).
+export const SECTION_FIELDS = {
+  overview: ['endorsementNo', 'region', 'country', 'program', 'sex', 'startDayMs', 'endDayMs', 'leadTimeDays', 'durationWorkHours', 'endorsementYearMonth'],
+  timeline: ['endorsementNo', 'country', 'endDayMs', 'durationWorkHours', 'startYearMonth', 'endYearMonth', 'endorsementYearMonth'],
   hei: ['endorsementNo', 'region', 'sex', 'hei', 'typeOfHei', 'country', 'host'],
-  geography: ['endorsementNo', 'country', 'host', 'fromCity', 'toCity', 'originLat', 'originLng', 'destLat', 'destLng'],
+  geography: ['endorsementNo', 'country', 'host', 'durationWorkHours', 'fromCity', 'toCity', 'originLat', 'originLng', 'destLat', 'destLng'],
 }
 
 // Bump when a section payload's shape changes, so responses cached by older code
 // (still valid for up to CACHE_SECONDS) are not served with missing fields.
-const CACHE_SCHEMA = 3
+const CACHE_SCHEMA = 4
 
 function cacheId(section, filters, includeOptions) {
   return createHash('sha256').update(JSON.stringify({ schema: CACHE_SCHEMA, section, filters, includeOptions })).digest('hex')

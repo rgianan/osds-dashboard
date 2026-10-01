@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildGeography, buildHeiRisk, buildOptions, buildOverview, buildSection, buildTimeline } from '../src/aggregate.js'
+import { DASHBOARD_SECTIONS, SECTION_FIELDS } from '../src/dashboard.js'
 
 const rows = [
   { endorsementNo: 'E-1', region: 'NCR', country: 'Singapore', program: 'IT', hei: 'HEI A', typeOfHei: 'Public', sex: 'Female', host: 'Host A', filterYear: '2026', endorsementYearMonth: '2026-01', startYearMonth: '2026-02', endYearMonth: '2026-03', leadTimeDays: 7, durationWorkHours: 160, startDayMs: 0, endDayMs: 1, originLat: 14, originLng: 121, destLat: 1, destLng: 104, fromCity: 'Manila', toCity: 'Singapore' },
@@ -28,6 +29,15 @@ test('reports selection totals so shares are not divided by the charted rows', (
   assert.equal(hei.totalInterns, 3)
   assert.equal(hei.totalHeis, 2)
   assert.equal(buildGeography(rows).totalInterns, 3)
+})
+
+test('each section loads every field its builder reads', () => {
+  // The API reads only SECTION_FIELDS from Firestore, so a section built from those
+  // fields alone must match the same section built from whole rows.
+  for (const section of DASHBOARD_SECTIONS) {
+    const loaded = rows.map((row) => Object.fromEntries(SECTION_FIELDS[section].filter((field) => field in row).map((field) => [field, row[field]])))
+    assert.deepEqual(buildSection(section, loaded), buildSection(section, rows), `${section} reads a field that SECTION_FIELDS does not load`)
+  }
 })
 
 test('serves each chart from the section where the dashboard shows it', () => {
