@@ -11,6 +11,7 @@ Extra spaces are removed by the importer itself.
 import csv
 from collections import Counter, defaultdict
 from pathlib import Path
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -23,6 +24,11 @@ COUNTRY_NAMES = {
     "united states": "United States of America",
     "america": "United States of America",
 }
+# Route map coordinates. A number typed with a stray trailing period or degree sign
+# ("98.398392.", "114.138916°") is not readable as a number, which drops the route from
+# the map; the stray characters are removed.
+COORDINATE_COLUMNS = ["Origin Latitude", "Origin Longitude", "Destination Latitude", "Destination Longitude"]
+TRAILING_PERIOD = re.compile(r"^(-?\d+(?:\.\d+)?)[.°]+$")
 GROUPED_COLUMNS = [
     "Region",
     "Full Name of HEI",
@@ -33,6 +39,21 @@ GROUPED_COLUMNS = [
     "from City",
     "to City",
 ]
+
+
+def _repair_coordinates(records, headers):
+    """Remove a stray trailing period or degree sign from coordinates; return how many changed."""
+    repaired = 0
+    for name in COORDINATE_COLUMNS:
+        if name not in headers:
+            continue
+        index = headers.index(name)
+        for record in records:
+            match = TRAILING_PERIOD.match(str(record[index]).strip())
+            if match:
+                record[index] = match.group(1)
+                repaired += 1
+    return repaired
 
 
 def _tidy(records, headers):
@@ -82,6 +103,7 @@ def build(source, output):
     headers_out = [header for header, _ in selected]
     country_before = Counter(" ".join(str(r[headers_out.index("Country")]).split()) for r in records) if "Country" in headers_out else Counter()
     merged = _tidy(records, headers_out)
+    repaired = _repair_coordinates(records, headers_out)
     Path(output).parent.mkdir(parents=True, exist_ok=True)
     with Path(output).open("w", encoding="utf-8", newline="") as stream:
         writer = csv.writer(stream)
@@ -94,6 +116,18 @@ def build(source, output):
     if country_before:
         country_after = Counter(" ".join(str(r[headers_out.index("Country")]).split()) for r in records)
         print(f"Countries: {len(country_before)} spellings -> {len(country_after)}: " + ", ".join(sorted(country_after)))
+    if repaired:
+        print(f"Coordinates with a stray trailing period or degree sign repaired: {repaired:,}")
+    if all(name in headers_out for name in COORDINATE_COLUMNS):
+        columns = [headers_out.index(name) for name in COORDINATE_COLUMNS]
+        def readable(value):
+            try:
+                float(str(value).strip())
+                return True
+            except ValueError:
+                return False
+        mapped = sum(1 for r in records if all(readable(r[i]) for i in columns))
+        print(f"Rows the route map can draw (all four coordinates present): {mapped:,} of {len(records):,}")
 
 
 if __name__ == "__main__":
