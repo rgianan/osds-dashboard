@@ -85,6 +85,12 @@ export function getForeignStudentsCube() {
   return getJsonWithRetry(`${FOREIGN_STUDENTS_API_URL}?format=cube`)
 }
 
+// Totals and rankings across all records (a few KB), for the Home page's headline.
+export function getForeignStudentsSummary() {
+  if (!FOREIGN_STUDENTS_API_URL) return Promise.reject(new Error('Missing foreign students API URL. Set VITE_FOREIGN_STUDENTS_API_URL or VITE_FIREBASE_API_URL.'))
+  return getJsonWithRetry(`${FOREIGN_STUDENTS_API_URL}?format=summary`)
+}
+
 export function getReport(id) {
   if (!REPORTS_API_URL) return Promise.reject(new Error('Missing reports API URL. Set VITE_REPORTS_API_URL or VITE_FIREBASE_API_URL.'))
   return getJsonWithRetry(`${REPORTS_API_URL}?id=${encodeURIComponent(id)}`)

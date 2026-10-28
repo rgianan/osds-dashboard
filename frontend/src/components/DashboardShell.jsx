@@ -1,16 +1,23 @@
-import { Suspense } from 'react'
-import { AlertTriangle, Banknote, BarChart3, ChevronDown, Filter, Globe2, Plane, RefreshCw, RotateCcw, ShieldCheck, X } from 'lucide-react'
+import { Suspense, useContext } from 'react'
+import { AlertTriangle, Banknote, BarChart3, ChevronDown, Filter, Globe2, Home, Menu, Plane, RefreshCw, RotateCcw, ShieldCheck, X } from 'lucide-react'
 import { n } from '../lib/format.js'
+import { NavContext } from '../lib/navigation.js'
 
-// hidden: left out of the header switcher; the page still opens from a direct #/<id> link.
+// Adding a dashboard is one entry here: the sidebar, the phone menu, and the Home page
+// all read this list.
+// group: the sidebar heading it sits under, in the order groups first appear (Home has none).
+// description: one line for its card on the Home page.
+// hidden: left out of the sidebar and Home; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
-  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', badge: 'SIAP', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane },
-  { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', badge: 'FS', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
-  { id: 'tosf', label: 'TOSF Increase', title: 'Tuition and Other School Fees', badge: 'TOSF', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
-  { id: 'anti-hazing', label: 'Anti-Hazing Law', title: 'Anti-Hazing Law (RA 11053)', badge: 'AH', href: '#/anti-hazing', documentTitle: 'Anti-Hazing Law (RA 11053) | CHED', icon: ShieldCheck },
+  { id: 'home', label: 'Home', title: 'CHED Data Dashboards', href: '#/home', documentTitle: 'CHED Data Dashboards', icon: Home },
+  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', group: 'Students and mobility', description: 'Student Internship Abroad Program: interns, endorsements, destinations, and host organizations.', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane },
+  { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', group: 'Students and mobility', description: 'Foreign students enrolled in Philippine HEIs, by academic year, nationality, region, and city.', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
+  { id: 'tosf', label: 'TOSF Increase', title: 'Tuition and Other School Fees', group: 'Fees and compliance', description: 'Applications to increase tuition and other school fees, and the results of CHED’s appeal.', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
+  { id: 'anti-hazing', label: 'Anti-Hazing Law', title: 'Anti-Hazing Law (RA 11053)', group: 'Fees and compliance', description: 'How higher education institutions report implementing the Anti-Hazing Law.', href: '#/anti-hazing', documentTitle: 'Anti-Hazing Law (RA 11053) | CHED', icon: ShieldCheck },
 ]
-// The page shown when the URL has no #/<id> route.
+// The page shown when the URL has no #/<id> route: Home.
 export const DEFAULT_VIEW_ID = DASHBOARD_VIEWS.find((view) => !view.hidden).id
+export const DASHBOARD_GROUPS = [...new Set(DASHBOARD_VIEWS.map((view) => view.group).filter(Boolean))]
 
 const TAB_GRID_COLUMNS = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' }
 
@@ -137,35 +144,13 @@ function Select({ id, label, value, options, onChange, allLabel = 'All', format 
   )
 }
 
-function DashboardSwitcher({ activeView }) {
-  return (
-    // Below xl the switcher wraps onto its own row under the title; from xl it sits
-    // between the title and the status, which saves a row above the first chart.
-    <nav className="order-last min-w-0 sm:basis-full xl:order-none xl:basis-auto" aria-label="Dashboards">
-      {/* A 2x2 grid on phones keeps every dashboard visible; a single row from sm up. */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 sm:inline-flex sm:max-w-full sm:overflow-x-auto">
-        {DASHBOARD_VIEWS.filter((view) => !view.hidden || view.id === activeView).map((view) => {
-          const Icon = view.icon
-          const active = view.id === activeView
-          return (
-            <a
-              key={view.id}
-              href={view.href}
-              aria-current={active ? 'page' : undefined}
-              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-1 text-center text-sm font-semibold leading-tight transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:min-h-9 sm:shrink-0 sm:justify-start sm:py-0 ${active ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'}`}
-            >
-              <Icon size={16} aria-hidden="true" /> {view.label}
-            </a>
-          )
-        })}
-      </div>
-    </nav>
-  )
-}
-
-// dataAsOf: the data's date, already formatted (formatDataDate); every page shows it the same way.
+// dataAsOf: the data's date, already formatted (formatDataDate); every page shows it the
+// same way. null leaves the date out (Home has no single data date).
+// The dashboards themselves are listed in the sidebar (Sidebar.jsx); on phones the
+// header's menu button opens them.
 export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefresh = false, loading = false, tabs = null, tab, onTabChange }) {
-  const badge = DASHBOARD_VIEWS.find((view) => view.id === activeView)?.badge || ''
+  const { menuOpen, openMenu } = useContext(NavContext)
+  const group = DASHBOARD_VIEWS.find((view) => view.id === activeView)?.group
 
   function handleTabKeyDown(event, index) {
     const keyTargets = {
@@ -183,16 +168,23 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className={`mx-auto max-w-[1600px] px-4 pt-5 sm:px-6 lg:px-8 ${tabs ? '' : 'pb-4'}`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between xl:flex-nowrap">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#102a43] text-xs font-black tracking-wide text-white shadow-sm">{badge}</div>
+            <button
+              type="button"
+              onClick={openMenu}
+              aria-expanded={menuOpen}
+              aria-label="Open the dashboard menu"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:hidden"
+            >
+              <Menu size={20} aria-hidden="true" />
+            </button>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">Commission on Higher Education</p>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">{group || 'Commission on Higher Education'}</p>
               <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
             </div>
           </div>
-          <DashboardSwitcher activeView={activeView} />
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
+          {dataAsOf === null ? null : <div className="flex items-center justify-between gap-3 sm:justify-end">
             <div className="min-w-0 text-left sm:text-right" aria-live="polite">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Data as of</p>
               <p className="truncate text-xs font-medium text-slate-600">{dataAsOf || 'Loading...'}</p>
@@ -207,7 +199,7 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
               <span>Refresh</span>
             </button> : null}
-          </div>
+          </div>}
         </div>
 
         {tabs ? (

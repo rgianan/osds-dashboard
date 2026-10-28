@@ -11,6 +11,11 @@ those fields to foreign-students.json next to this script. No row-level record
 is written. Each HEI is written as its institution code and its name from the
 HEI list (Sheet2), for the HEI filter and the distinct-HEI count.
 
+Where the data sheet's own lookup failed (its HEI type, city, and province columns
+read "Not Found / Does Not Match the UII"), those values are taken from Sheet2 by the
+row's HEI code (the "Ins Code True" column). Rows whose code is not in Sheet2 stay
+"Not specified"; the script lists those codes.
+
 HEI cities are geocoded once through OpenStreetMap Nominatim (city and province
 names only) and cached in ph-city-coordinates.json, so later builds run offline.
 Review any entry the script reports before publishing.
@@ -51,11 +56,21 @@ MIN_HEI_MATCH = 0.9
 DATA_SHEET = "data"
 HEI_SHEET = "Sheet2"
 HEI_SHEET_HEADERS = {"hei": "UII", "city": "City/Municipality", "province": "Province"}
-HEI_SHEET_NAME = "HEI Name"
+# Columns of the HEI list kept per institution, for its name and for filling in
+# lookups the data sheet could not resolve.
+HEI_SHEET_RECORD = {"name": "HEI Name", "type": "HEI Type", "city": "City/Municipality", "province": "Province"}
 HEI_CODE_DIGITS = 5
+# The data sheet's lookup columns hold this text (or #N/A, or nothing) when its own
+# lookup failed; those rows are filled from the HEI list by the row's HEI code.
+NOT_FOUND_PREFIX = "not found"
 
 SEX_LABELS = {"m": "Male", "male": "Male", "f": "Female", "female": "Female"}
 NOT_SPECIFIED = "Not specified"
+# A region written with two numbers across years ("16 - CARAGA" in 2022-23, "19 - CARAGA"
+# in 2025-26) would show as two regions.
+REGION_SYNONYMS = {
+    "19 - CARAGA": "16 - CARAGA",
+}
 NATIONALITY_SYNONYMS = {
     "n/a": NOT_SPECIFIED,
     "na": NOT_SPECIFIED,
@@ -76,6 +91,21 @@ NATIONALITY_SYNONYMS = {
     "upper voltan": "Burkinabe",
     "mecanese": "Macanese",
     "saint kitts and nevis": "Kittitian or Nevisian",
+    # Spellings first seen in 2025-2026, merged into the existing labels.
+    "east timorese": "Timorese",
+    "myanmar (burmese)": "Burmese",
+    "south korean": "Korean",
+    "laotian": "Lao",
+    "botswanan": "Batswana",
+    "burkinabé": "Burkinabe",
+    "eswatini": "Swazi",
+    "lesotho": "Basotho",
+    "equatorial guinean": "Equatoguinean",
+    "singapore citizen": "Singaporean",
+    "somalian": "Somali",
+    "british citizen": "British",
+    "beninese": "Beninoise",
+    "vanuatuan": "Vanuatu",
 }
 
 MANILA_DISTRICTS = {
@@ -116,20 +146,20 @@ def _hei_reference(workbook):
         sys.exit(f"Sheet '{HEI_SHEET}' (the HEI list) is required to identify the HEI city and province columns.")
     rows = (cells for _, cells in workbook.rows(HEI_SHEET))
     header = next(rows, {})
-    columns = {**HEI_SHEET_HEADERS, "name": HEI_SHEET_NAME}
+    columns = {**HEI_SHEET_HEADERS, **{f"record_{key}": name for key, name in HEI_SHEET_RECORD.items()}}
     indexes = {key: next((i for i, h in header.items() if _clean(h) == name), None) for key, name in columns.items()}
-    missing = [columns[key] for key, index in indexes.items() if index is None]
+    missing = sorted({columns[key] for key, index in indexes.items() if index is None})
     if missing:
         sys.exit(f"Sheet '{HEI_SHEET}' is missing column(s): {', '.join(missing)}")
     values = {key: set() for key in HEI_SHEET_HEADERS}
-    names = {}
+    heis = {}
     for row in rows:
         for key in HEI_SHEET_HEADERS:
             if row.get(indexes[key]):
                 values[key].add(_clean(row[indexes[key]]).lower())
-        if row.get(indexes["hei"]) and row.get(indexes["name"]):
-            names.setdefault(_hei_code(row[indexes["hei"]]), _clean(row[indexes["name"]]))
-    return values, names
+        if row.get(indexes["hei"]):
+            heis.setdefault(_hei_code(row[indexes["hei"]]), {key: _clean(row.get(indexes[f"record_{key}"])) for key in HEI_SHEET_RECORD})
+    return values, heis
 
 
 def _best_match_column(rows, header_row, reference, label):
@@ -157,6 +187,43 @@ def _hei_code(value):
     # Some rows store a numeric code without its leading zero (7045 for 07045).
     code = _clean(value)
     return code.zfill(HEI_CODE_DIGITS) if code.isdigit() else code or NOT_SPECIFIED
+
+
+def _not_found(value):
+    text = _clean(value).lower()
+    return not text or text.startswith(NOT_FOUND_PREFIX) or text in ("#n/a", "n/a")
+
+
+def _fill_from_hei_list(records, heis):
+    """Fill HEI type, city, and province the data sheet could not look up.
+
+    The HEI list stores the type as a code ("1", "2a"); the data sheet's own label for
+    each code is learned from rows where both are present, so filled rows use the same
+    labels as the rest. Returns counts of filled and unresolved values per field.
+    """
+    labels = defaultdict(Counter)
+    for record in records:
+        hei = heis.get(_hei_code(record["hei_code"]))
+        if hei and hei["type"] and not _not_found(record["hei_type"]):
+            labels[hei["type"]][record["hei_type"]] += 1
+    type_label = {code: counts.most_common(1)[0][0] for code, counts in labels.items()}
+
+    report = Counter()
+    unresolved_codes = Counter()
+    for record in records:
+        code = _hei_code(record["hei_code"])
+        hei = heis.get(code) or {}
+        looked_up = False
+        for field, key in (("hei_type", "type"), ("hei_city", "city"), ("hei_province", "province")):
+            if not _not_found(record[field]):
+                continue
+            looked_up = True
+            value = type_label.get(hei.get(key), "") if key == "type" else hei.get(key, "")
+            record[field] = value
+            report[f"{key} filled" if value else f"{key} unresolved"] += 1
+        if looked_up and not hei:
+            unresolved_codes[code] += 1
+    return report, type_label, unresolved_codes
 
 
 def _nationality_resolver(raw_counts):
@@ -245,7 +312,8 @@ def _flag_outliers(coords, cities):
 
 def _load_coordinates(path, cities, allow_network):
     coords = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    missing = [(c, p) for c, p in cities if f"{c}|{p}" not in coords]
+    # A city nobody could look up has no place to geocode; it is reported as unmapped.
+    missing = [(c, p) for c, p in cities if f"{c}|{p}" not in coords and c != NOT_SPECIFIED]
     if missing and not allow_network:
         print(f"{len(missing)} cities have no coordinates; rerun without --offline to geocode them.")
     for index, (city, province) in enumerate(missing if allow_network else []):
@@ -271,7 +339,7 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     with Workbook(xlsx_path) as workbook:
         if DATA_SHEET not in workbook.sheet_names:
             sys.exit(f"Sheet '{DATA_SHEET}' not found. Sheets: {', '.join(workbook.sheet_names)}")
-        reference, hei_names = _hei_reference(workbook)
+        reference, hei_list = _hei_reference(workbook)
         data_rows = (cells for _, cells in workbook.rows(DATA_SHEET))
         header_row = next(data_rows)
         rows = [row for row in data_rows if row]
@@ -284,11 +352,12 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     columns["hei_province"] = _best_match_column(rows, header_row, reference["province"], "province")
     records = [{field: _clean(row.get(index)) for field, index in columns.items()} for row in rows]
     records = [record for record in records if any(record.values())]
+    filled, type_label, unresolved_codes = _fill_from_hei_list(records, hei_list)
     raw_nationalities = Counter(record["nationality"] for record in records)
     nationality = _nationality_resolver(raw_nationalities)
     counts = Counter(
-        (r["academic_year"], r["region"], _sex(r["sex"]), nationality(r["nationality"]), r["hei_type"] or NOT_SPECIFIED,
-         r["hei_city"], r["hei_province"] or NOT_SPECIFIED, _hei_code(r["hei_code"]))
+        (r["academic_year"], REGION_SYNONYMS.get(r["region"], r["region"]), _sex(r["sex"]), nationality(r["nationality"]),
+         r["hei_type"] or NOT_SPECIFIED, r["hei_city"] or NOT_SPECIFIED, r["hei_province"] or NOT_SPECIFIED, _hei_code(r["hei_code"]))
         for r in records
     )
 
@@ -325,7 +394,7 @@ def build(xlsx_path, out_path, coords_path, allow_network):
                 for c, p in cities
             ],
             # A code missing from the HEI list keeps the code as its name (reported below).
-            "hei": [{"code": code, "name": hei_names.get(code, code)} for code in heis],
+            "hei": [{"code": code, "name": (hei_list.get(code) or {}).get("name") or code} for code in heis],
         },
         "cells": [
             [index["y"][y], index["r"][r], index["s"][s], index["n"][n], index["h"][h], index["c"][(c, p)], index["p"][p], index["i"][i], count]
@@ -343,9 +412,16 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     print(f"Dimensions: {len(years)} years, {len(regions)} regions, {len(sexes)} sexes, {len(nationalities)} nationalities, "
           f"{len(hei_types)} HEI types, {len(cities)} city/province locations, {len(provinces)} provinces, {len(heis)} HEIs")
     print(f"Records at cities without coordinates: {unmapped:,}")
-    unnamed = [code for code in heis if code != NOT_SPECIFIED and code not in hei_names]
+    if filled:
+        print(f"Lookups the data sheet could not resolve, filled from {HEI_SHEET} by HEI code: "
+              + ", ".join(f"{key} {count:,}" for key, count in sorted(filled.items())))
+        print(f"  {HEI_SHEET} HEI type codes read as: {dict(sorted(type_label.items()))}")
+    if unresolved_codes:
+        print(f"  HEI codes not in {HEI_SHEET}, left as Not specified (rows): "
+              + ", ".join(f"{code} ({count:,})" for code, count in unresolved_codes.most_common()))
+    unnamed = [code for code in heis if code != NOT_SPECIFIED and not (hei_list.get(code) or {}).get("name")]
     if unnamed:
-        print(f"HEI codes not in {HEI_SHEET}, shown by code: {', '.join(unnamed)}")
+        print(f"HEI codes without a name in {HEI_SHEET}, shown by code: {', '.join(unnamed)}")
     print(f"Nationality spellings merged: {merged} ({len(raw_nationalities)} raw -> {len(nationalities)} labels)")
     if review:
         print(f"\nCoordinates to review in {coords_path.name}:")

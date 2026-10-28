@@ -1,4 +1,12 @@
 {
+  "Abucay|Bataan": {
+    "lat": 14.72131,
+    "lng": 120.53487,
+    "query": "Abucay, Bataan, Philippines",
+    "displayName": "Abucay, Bataan, Central Luzon, 2114, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
   "Agoo|La Union": {
     "lat": 16.3224,
     "lng": 120.367,
@@ -12,6 +20,14 @@
     "lng": 119.97348,
     "query": "Alaminos City, Pangasinan, Philippines",
     "displayName": "Alaminos City development, Tangcarang, Alaminos, Pangasinan, Ilocos Region, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Anda|Pangasinan": {
+    "lat": 16.28963,
+    "lng": 119.94964,
+    "query": "Anda, Pangasinan, Philippines",
+    "displayName": "Anda, Pangasinan, Ilocos Region, 2405, Philippines",
     "needsReview": false,
     "note": ""
   },
@@ -192,11 +208,36 @@
     "needsReview": false,
     "note": ""
   },
+  "Casiguran|Aurora": {
+    "lat": 16.27704,
+    "lng": 122.12333,
+    "query": "Casiguran, Aurora, Philippines",
+    "displayName": "Casiguran, Aurora, Central Luzon, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Catbalogan City|Western Samar": {
+    "lat": 11.77534,
+    "lng": 124.88311,
+    "query": "Catbalogan City, Western Samar, Philippines",
+    "displayName": "Catbalogan, Samar, Eastern Visayas, 6700, Philippines",
+    "needsReview": false,
+    "note": "Checked: Samar is the official name of Western Samar; Catbalogan is its capital",
+    "source": "manual"
+  },
   "Cebu City|Cebu": {
     "lat": 10.32856,
     "lng": 123.90088,
     "query": "Cebu City, Cebu, Philippines",
     "displayName": "University of Southern Philippines Foundation, Salinas Drive, Ucma Village, Lahug, Cebu City, Central Visayas, 6000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Daet|Camarines Norte": {
+    "lat": 14.11233,
+    "lng": 122.9557,
+    "query": "Daet, Camarines Norte, Philippines",
+    "displayName": "Daet, Camarines Norte, Bicol Region, 4600, Philippines",
     "needsReview": false,
     "note": ""
   },
@@ -269,6 +310,22 @@
     "lng": 125.1013,
     "query": "Gingoog City, Misamis Oriental, Philippines",
     "displayName": "Gingoog, Misamis Oriental, Northern Mindanao, 9014, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Hamtic|Antique": {
+    "lat": 10.70036,
+    "lng": 121.98082,
+    "query": "Hamtic, Antique, Philippines",
+    "displayName": "Hamtic, Antique, Western Visayas, 5715, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Hinigaran|Negros Occidental": {
+    "lat": 10.27138,
+    "lng": 122.85199,
+    "query": "Hinigaran, Negros Occidental, Philippines",
+    "displayName": "Hinigaran, Negros Occidental, Negros Island Region, 6106, Philippines",
     "needsReview": false,
     "note": ""
   },
@@ -512,6 +569,14 @@
     "needsReview": false,
     "note": ""
   },
+  "Minglanilla|Cebu": {
+    "lat": 10.24603,
+    "lng": 123.79606,
+    "query": "Minglanilla, Cebu, Philippines",
+    "displayName": "Minglanilla, Cebu, Central Visayas, 6046, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
   "Muntinlupa City|Metro Manila": {
     "lat": 14.38926,
     "lng": 121.04491,
@@ -573,6 +638,14 @@
     "lng": 125.68071,
     "query": "Panabo City, Davao del Norte, Philippines",
     "displayName": "Panabo, Davao del Norte, Davao Region, 8105, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "Paniqui|Tarlac": {
+    "lat": 15.66865,
+    "lng": 120.58582,
+    "query": "Paniqui, Tarlac, Philippines",
+    "displayName": "Paniqui, Tarlac, Central Luzon, 2307, Philippines",
     "needsReview": false,
     "note": ""
   },
@@ -661,6 +734,22 @@
     "lng": 120.30298,
     "query": "San Fernando City, La Union, Philippines",
     "displayName": "National Grid Corporation of the Philippines, Poro, San Fernando, La Union, Ilocos Region, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Fernando City|Pampanga": {
+    "lat": 15.0283,
+    "lng": 120.6938,
+    "query": "San Fernando City, Pampanga, Philippines",
+    "displayName": "San Fernando, Pampanga, Central Luzon, 2000, Philippines",
+    "needsReview": false,
+    "note": ""
+  },
+  "San Ildefonso|Bulacan": {
+    "lat": 15.07812,
+    "lng": 120.93981,
+    "query": "San Ildefonso, Bulacan, Philippines",
+    "displayName": "San Ildefonso, Bulacan, Central Luzon, 3010, Philippines",
     "needsReview": false,
     "note": ""
   },
@@ -760,6 +849,14 @@
     "needsReview": false,
     "note": "Geocoder returned a point southwest of the city; set to the city center",
     "source": "manual"
+  },
+  "Surigao City|Surigao del Norte": {
+    "lat": 9.7905,
+    "lng": 125.49357,
+    "query": "Surigao City, Surigao del Norte, Philippines",
+    "displayName": "Surigao City, Surigao del Norte, Caraga, 8400, Philippines",
+    "needsReview": false,
+    "note": ""
   },
   "Tacloban City|Leyte": {
     "lat": 11.18971,

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   BarChart3,
@@ -16,6 +16,8 @@ import { postJson } from './lib/api.js'
 import { formatDataDate, n, sexLabel, shortProgramName, shortRegionName } from './lib/format.js'
 import { KpiCard, Panel } from './components/Panel.jsx'
 import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, PageIntro, Visualization } from './components/DashboardShell.jsx'
+import { MobileMenu, Sidebar } from './components/Sidebar.jsx'
+import { NavContext } from './lib/navigation.js'
 
 const loadCharts = () => import('./components/Charts.jsx')
 const Donut = lazy(() => loadCharts().then((module) => ({ default: module.Donut })))
@@ -24,8 +26,9 @@ const HorizontalBars = lazy(() => loadCharts().then((module) => ({ default: modu
 const MonthLine = lazy(() => loadCharts().then((module) => ({ default: module.MonthLine })))
 const StackedHeiCountryBars = lazy(() => loadCharts().then((module) => ({ default: module.StackedHeiCountryBars })))
 const RouteMap = lazy(() => import('./components/RouteMap.jsx').then((module) => ({ default: module.RouteMap })))
-// Every dashboard except SIAP loads on demand when its view is opened.
+// Every page except SIAP (Home included) loads on demand when it is opened.
 const VIEW_COMPONENTS = {
+  home: lazy(() => import('./components/HomeDashboard.jsx')),
   'foreign-students': lazy(() => import('./components/ForeignStudentsDashboard.jsx')),
   tosf: lazy(() => import('./components/TosfDashboard.jsx')),
   'anti-hazing': lazy(() => import('./components/AntiHazingDashboard.jsx')),
@@ -487,8 +490,24 @@ function ViewFallback({ viewId }) {
   )
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'ched.sidebarCollapsed'
+
+// The sidebar's collapsed state is a per-browser preference; storage can be unavailable.
+function readSidebarCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 export default function App() {
   const [view, setView] = useState(() => viewFromHash(window.location.hash))
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
+  const openMenu = useCallback(() => setMenuOpen(true), [])
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const navigation = useMemo(() => ({ menuOpen, openMenu }), [menuOpen, openMenu])
 
   useEffect(() => {
     // Only "#/..." hashes are routes; the skip link and other in-page anchors must not switch dashboards.
@@ -499,7 +518,16 @@ export default function App() {
 
   useEffect(() => {
     document.title = DASHBOARD_VIEWS.find((item) => item.id === view)?.documentTitle || document.title
+    // A dashboard opened from the sidebar starts at its top, not where the last one was scrolled to.
+    window.scrollTo(0, 0)
   }, [view])
+
+  function toggleSidebar() {
+    setSidebarCollapsed((collapsed) => {
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(!collapsed)) } catch { /* the preference just won't persist */ }
+      return !collapsed
+    })
+  }
 
   function skipToContent(event) {
     event.preventDefault()
@@ -508,11 +536,17 @@ export default function App() {
 
   const ViewComponent = VIEW_COMPONENTS[view]
   return (
-    <div className="min-h-screen bg-[#f6f8fb] text-slate-900">
-      <a href="#dashboard-content" onClick={skipToContent} className="sr-only z-50 rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
-      {ViewComponent
-        ? <Suspense key={view} fallback={<ViewFallback viewId={view} />}><ViewComponent /></Suspense>
-        : <SiapDashboard />}
-    </div>
+    <NavContext.Provider value={navigation}>
+      <div className="min-h-screen bg-[#f6f8fb] text-slate-900 lg:flex">
+        <a href="#dashboard-content" onClick={skipToContent} className="sr-only z-[1200] rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
+        <Sidebar activeView={view} collapsed={sidebarCollapsed} onToggleCollapsed={toggleSidebar} />
+        <MobileMenu activeView={view} open={menuOpen} onClose={closeMenu} />
+        <div className="min-w-0 flex-1">
+          {ViewComponent
+            ? <Suspense key={view} fallback={<ViewFallback viewId={view} />}><ViewComponent /></Suspense>
+            : <SiapDashboard />}
+        </div>
+      </div>
+    </NavContext.Provider>
   )
 }

@@ -82,7 +82,8 @@ function summarize({ meta, dimensions, cells }, filters) {
   return {
     total,
     heiCount: heis ? heis.size : null,
-    cityCount: cities.length,
+    // Rows whose HEI could not be looked up have city "Not specified"; that is not a city.
+    cityCount: cities.filter((city) => city.name !== NOT_SPECIFIED).length,
     years: dimensions.academicYear.map((name, index) => ({ name, totalStudents: byYear[index] })),
     regions: ranked(dimensions.region, byRegion, shortRegionName),
     nationalities: nationalities.slice(0, TOP_NATIONALITIES),
@@ -209,8 +210,9 @@ export default function ForeignStudentsDashboard() {
               {summary.total === 0 ? (
                 <EmptyState title="No foreign students match these filters" message="Change or clear one or more filters." />
               ) : (
-                // One row on wide screens; the map column is narrower because the country is tall.
-                <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
+                // One row on wide screens (the sidebar takes about 240px, so from 1400px); the map
+                // column is narrower because the country is tall.
+                <div className="grid gap-5 lg:grid-cols-2 min-[1400px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
                   <Panel title="Foreign students by region" subtitle="Region of the higher education institution">
                     <Visualization data={summary.regions} height={barHeight(summary.regions.length)} label="Horizontal bar chart of foreign students by region" emptyTitle="No regional data" columns={studentColumns('Region')}>
                       <HorizontalBars data={summary.regions} valueKey="totalStudents" height={barHeight(summary.regions.length)} color="#2563eb" labelWidth={140} labelLimit={28} />
@@ -225,7 +227,7 @@ export default function ForeignStudentsDashboard() {
                     </Visualization>
                     <DefinitionNote>Spelling variants in the source file are combined, for example INDIAN and Indian, or Nepalese and Nepali.</DefinitionNote>
                   </Panel>
-                  <Panel title="Foreign students by city" subtitle="City of the HEI; circle area shows the number of students" className="lg:col-span-2 xl:col-span-1">
+                  <Panel title="Foreign students by city" subtitle="City of the HEI; circle area shows the number of students" className="lg:col-span-2 min-[1400px]:col-span-1">
                     <Visualization
                       data={summary.cities}
                       height={560}
