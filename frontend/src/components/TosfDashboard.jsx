@@ -55,14 +55,14 @@ export default function TosfDashboard() {
 
   return (
     <>
-      <Header activeView="tosf" title="Tuition and Other School Fees" dataAsOf={formatDataDate(report?.publishedAt)} />
+      <Header activeView="tosf" title="TOSF Increase" dataAsOf={formatDataDate(report?.publishedAt)} />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <section aria-busy={!report && !error} aria-labelledby="tosf-title">
           <PageIntro
             titleId="tosf-title"
             title="Increase applications and appeal results"
-            description="Private HEI applications received by CHED regional offices, and how schools responded to CHED's appeal to COCOPEA."
+            description="Private HEI applications to increase tuition and other school fees (TOSF), received by CHED regional offices, and how schools responded to CHED's appeal to COCOPEA."
             aside={report?.academicYear ? `Academic year ${report.academicYear}` : null}
           />
 

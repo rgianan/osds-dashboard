@@ -88,7 +88,7 @@ export default function HomeDashboard() {
   const views = DASHBOARD_VIEWS.filter((view) => view.group && !view.hidden)
   return (
     <>
-      <Header activeView="home" title="CHED Data Dashboards" dataAsOf={null} />
+      <Header activeView="home" title="Home" dataAsOf={null} />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <PageIntro titleId="home-title" title="All dashboards" description="Each card shows a dashboard's latest headline number. Open one to explore and filter its data." />

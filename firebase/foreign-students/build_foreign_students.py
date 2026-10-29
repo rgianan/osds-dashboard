@@ -11,10 +11,13 @@ those fields to foreign-students.json next to this script. No row-level record
 is written. Each HEI is written as its institution code and its name from the
 HEI list (Sheet2), for the HEI filter and the distinct-HEI count.
 
+Rows whose HEI cannot be identified (its code is not in Sheet2, or Sheet2 has no name
+for it) are left out: they cannot be attributed to an HEI, filtered, or mapped. The
+script lists those codes and how many rows each had.
+
 Where the data sheet's own lookup failed (its HEI type, city, and province columns
 read "Not Found / Does Not Match the UII"), those values are taken from Sheet2 by the
-row's HEI code (the "Ins Code True" column). Rows whose code is not in Sheet2 stay
-"Not specified"; the script lists those codes.
+row's HEI code (the "Ins Code True" column).
 
 HEI cities are geocoded once through OpenStreetMap Nominatim (city and province
 names only) and cached in ph-city-coordinates.json, so later builds run offline.
@@ -352,6 +355,15 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     columns["hei_province"] = _best_match_column(rows, header_row, reference["province"], "province")
     records = [{field: _clean(row.get(index)) for field, index in columns.items()} for row in rows]
     records = [record for record in records if any(record.values())]
+    excluded = Counter()
+    identified = []
+    for record in records:
+        code = _hei_code(record["hei_code"])
+        if (hei_list.get(code) or {}).get("name"):
+            identified.append(record)
+        else:
+            excluded[code] += 1
+    records = identified
     filled, type_label, unresolved_codes = _fill_from_hei_list(records, hei_list)
     raw_nationalities = Counter(record["nationality"] for record in records)
     nationality = _nationality_resolver(raw_nationalities)
@@ -419,9 +431,9 @@ def build(xlsx_path, out_path, coords_path, allow_network):
     if unresolved_codes:
         print(f"  HEI codes not in {HEI_SHEET}, left as Not specified (rows): "
               + ", ".join(f"{code} ({count:,})" for code, count in unresolved_codes.most_common()))
-    unnamed = [code for code in heis if code != NOT_SPECIFIED and not (hei_list.get(code) or {}).get("name")]
-    if unnamed:
-        print(f"HEI codes without a name in {HEI_SHEET}, shown by code: {', '.join(unnamed)}")
+    if excluded:
+        print(f"Rows left out because their HEI is not named in {HEI_SHEET} ({sum(excluded.values()):,}): "
+              + ", ".join(f"{code} ({count:,})" for code, count in excluded.most_common()))
     print(f"Nationality spellings merged: {merged} ({len(raw_nationalities)} raw -> {len(nationalities)} labels)")
     if review:
         print(f"\nCoordinates to review in {coords_path.name}:")

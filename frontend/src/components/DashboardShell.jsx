@@ -9,10 +9,10 @@ import { NavContext } from '../lib/navigation.js'
 // description: one line for its card on the Home page.
 // hidden: left out of the sidebar and Home; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
-  { id: 'home', label: 'Home', title: 'CHED Data Dashboards', href: '#/home', documentTitle: 'CHED Data Dashboards', icon: Home },
+  { id: 'home', label: 'Home', title: 'Home', href: '#/home', documentTitle: 'CHED Data Dashboards', icon: Home },
   { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', group: 'Students and mobility', description: 'Student Internship Abroad Program: interns, endorsements, destinations, and host organizations.', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane },
   { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', group: 'Students and mobility', description: 'Foreign students enrolled in Philippine HEIs, by academic year, nationality, region, and city.', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
-  { id: 'tosf', label: 'TOSF Increase', title: 'Tuition and Other School Fees', group: 'Fees and compliance', description: 'Applications to increase tuition and other school fees, and the results of CHED’s appeal.', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
+  { id: 'tosf', label: 'TOSF Increase', title: 'TOSF Increase', group: 'Fees and compliance', description: 'Applications to increase tuition and other school fees, and the results of CHED’s appeal.', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
   { id: 'anti-hazing', label: 'Anti-Hazing Law', title: 'Anti-Hazing Law (RA 11053)', group: 'Fees and compliance', description: 'How higher education institutions report implementing the Anti-Hazing Law.', href: '#/anti-hazing', documentTitle: 'Anti-Hazing Law (RA 11053) | CHED', icon: ShieldCheck },
 ]
 // The page shown when the URL has no #/<id> route: Home.
@@ -166,10 +166,13 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className={`mx-auto max-w-[1600px] px-4 pt-5 sm:px-6 lg:px-8 ${tabs ? '' : 'pb-4'}`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3.5">
+    // Below lg the header stays at the top of the screen so the menu button (the only way
+    // to other dashboards there) is always one tap away; it is kept to one row plus tabs.
+    // On desktop the sidebar does that job and the header scrolls with the page.
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white lg:static">
+      <div className={`mx-auto max-w-[1600px] px-4 pt-3 sm:px-6 sm:pt-5 lg:px-8 ${tabs ? '' : 'pb-3 sm:pb-4'}`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={openMenu}
@@ -180,24 +183,25 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
               <Menu size={20} aria-hidden="true" />
             </button>
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-700">{group || 'Commission on Higher Education'}</p>
-              <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
+              <p className="hidden text-xs font-bold uppercase tracking-[0.14em] text-blue-700 sm:block">{group || 'Commission on Higher Education'}</p>
+              <h1 className="text-lg font-bold leading-tight tracking-tight text-slate-950 sm:truncate sm:text-2xl">{title}</h1>
+              {dataAsOf === null ? null : <p className="text-xs font-medium text-slate-600 sm:hidden">Data as of {dataAsOf || 'Loading...'}</p>}
             </div>
           </div>
-          {dataAsOf === null ? null : <div className="flex items-center justify-between gap-3 sm:justify-end">
-            <div className="min-w-0 text-left sm:text-right" aria-live="polite">
+          {dataAsOf === null && !showRefresh ? null : <div className="flex shrink-0 items-center gap-3">
+            {dataAsOf === null ? null : <div className="hidden text-right sm:block" aria-live="polite">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Data as of</p>
               <p className="truncate text-xs font-medium text-slate-600">{dataAsOf || 'Loading...'}</p>
-            </div>
+            </div>}
             {showRefresh ? <button
               type="button"
               onClick={onRefresh}
               disabled={loading}
-              className="inline-flex min-h-11 items-center lg:min-h-10 justify-center gap-2 rounded-lg bg-[#102a43] px-3.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#183b56] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#102a43] px-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#183b56] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0 sm:px-3.5 lg:min-h-10"
               aria-label="Refresh the active dashboard section"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-              <span>Refresh</span>
+              <span className="hidden sm:inline">Refresh</span>
             </button> : null}
           </div>}
         </div>

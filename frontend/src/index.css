@@ -33,6 +33,11 @@ select { font: inherit; }
 
 .leaflet-control-zoom a { color: #102a43; }
 
+/* Leaflet stacks its panes at z-index 400 and its controls at 1000. Isolating the map
+   keeps those numbers inside it, so the pinned phone header stays above a map that
+   scrolls under it. */
+.leaflet-container { isolation: isolate; }
+
 /* Leaflet's touch zoom buttons are 30px; make them a 44px touch target. */
 @media (pointer: coarse) {
   .leaflet-touch .leaflet-bar a {

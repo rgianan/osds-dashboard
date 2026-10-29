@@ -2,16 +2,12 @@ import { useEffect, useRef } from 'react'
 import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { DASHBOARD_GROUPS, DASHBOARD_VIEWS } from './DashboardShell.jsx'
 
+// One line: the page header already names the commission (or the dashboard's group).
 function Brand({ compact = false }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <span className="flex h-9 w-11 shrink-0 items-center justify-center rounded-lg bg-[#102a43] text-xs font-black tracking-wide text-white">CHED</span>
-      {compact ? null : (
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-bold text-slate-950">Data dashboards</span>
-          <span className="block text-xs leading-4 text-slate-600">Commission on Higher Education</span>
-        </span>
-      )}
+      {compact ? null : <span className="truncate text-sm font-bold text-slate-950">Data dashboards</span>}
     </div>
   )
 }
@@ -60,10 +56,13 @@ function NavList({ activeView, collapsed = false, onNavigate }) {
 export function Sidebar({ activeView, collapsed, onToggleCollapsed }) {
   return (
     <aside className={`hidden shrink-0 border-r border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col ${collapsed ? 'lg:w-[76px]' : 'lg:w-60'}`}>
-      <div className={`flex min-h-[72px] items-center border-b border-slate-200 ${collapsed ? 'justify-center' : 'px-4'}`}>
-        <Brand compact={collapsed} />
+      {/* No divider here: the page header's bottom line sits at a different height on each
+          page, and two lines that don't meet read as misaligned. The brand row matches the
+          header's title row (20px top padding, 44px row) so the two line up across the top. */}
+      <div className={`flex h-[68px] shrink-0 items-start pt-5 ${collapsed ? 'justify-center' : 'px-4'}`}>
+        <div className="flex h-11 items-center"><Brand compact={collapsed} /></div>
       </div>
-      <nav className={`flex-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`} aria-label="Dashboards">
+      <nav className={`flex-1 overflow-y-auto pb-4 pt-6 ${collapsed ? 'px-2' : 'px-3'}`} aria-label="Dashboards">
         <NavList activeView={activeView} collapsed={collapsed} />
       </nav>
       <div className={`border-t border-slate-200 py-3 ${collapsed ? 'px-2' : 'px-3'}`}>
