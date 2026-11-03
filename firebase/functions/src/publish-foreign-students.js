@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { initializeApp } from 'firebase-admin/app'
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
+import { dashboardDatabase } from './database.js'
 import { CONFIG_DOC, DATASET_COLLECTION, validateDataset } from './foreign-students.js'
 
 const KEEP_VERSIONS = 5
@@ -26,7 +27,7 @@ const dataset = JSON.parse(readFileSync(filePath, 'utf8'))
 const total = validateDataset(dataset)
 
 initializeApp({ projectId: projectId() })
-const db = getFirestore()
+const db = dashboardDatabase()
 const version = `fs-${new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-')}`
 const configRef = db.doc(CONFIG_DOC)
 

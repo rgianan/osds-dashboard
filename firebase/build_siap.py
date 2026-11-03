@@ -7,6 +7,9 @@ Values the dashboard groups by are tidied so one place or organization is one ba
 spelling variants that differ only in capitals ("Hong kong", "Hong Kong") take the
 most common spelling, and other names for a country ("USA") take the standard name.
 Extra spaces are removed by the importer itself.
+
+A row with no destination coordinates takes its host organization's location from the
+host's other rows, when those all agree on one location.
 """
 import csv
 from collections import Counter, defaultdict
@@ -54,6 +57,45 @@ def _repair_coordinates(records, headers):
                 record[index] = match.group(1)
                 repaired += 1
     return repaired
+
+
+def _fill_destination_from_host(records, headers):
+    """Give a row with no destination coordinates its host's location from other rows.
+
+    Used only when every other row for that host (in the same country) gives one and the
+    same location, so the fill cannot pick between two branches. Returns
+    {host: rows filled} and a list of hosts left unfilled because they are ambiguous.
+    """
+    names = ["Name of Foreign Host Establishment or Organization (FHE/O)", "Country", "to City",
+             "Destination Latitude", "Destination Longitude"]
+    if not all(name in headers for name in names):
+        return {}, []
+    host, country, city, lat, lng = (headers.index(name) for name in names)
+    text = lambda value: " ".join(str(value).split())
+
+    def coordinate(value):
+        try:
+            return float(text(value))
+        except ValueError:
+            return None
+
+    known = defaultdict(set)
+    for record in records:
+        if coordinate(record[lat]) is not None and coordinate(record[lng]) is not None:
+            known[(text(record[host]).lower(), text(record[country]).lower())].add(
+                (text(record[lat]), text(record[lng]), text(record[city])))
+    filled, ambiguous = Counter(), set()
+    for record in records:
+        if coordinate(record[lat]) is not None and coordinate(record[lng]) is not None:
+            continue
+        key = (text(record[host]).lower(), text(record[country]).lower())
+        places = known.get(key, set())
+        if len(places) == 1:
+            record[lat], record[lng], record[city] = next(iter(places))
+            filled[text(record[host])] += 1
+        elif len(places) > 1:
+            ambiguous.add(text(record[host]))
+    return dict(filled), sorted(ambiguous)
 
 
 def _tidy(records, headers):
@@ -104,6 +146,8 @@ def build(source, output):
     country_before = Counter(" ".join(str(r[headers_out.index("Country")]).split()) for r in records) if "Country" in headers_out else Counter()
     merged = _tidy(records, headers_out)
     repaired = _repair_coordinates(records, headers_out)
+    # After tidying, so "Hong kong" and "Hong Kong" rows count as the same host and country.
+    host_filled, host_ambiguous = _fill_destination_from_host(records, headers_out)
     Path(output).parent.mkdir(parents=True, exist_ok=True)
     with Path(output).open("w", encoding="utf-8", newline="") as stream:
         writer = csv.writer(stream)
@@ -118,6 +162,11 @@ def build(source, output):
         print(f"Countries: {len(country_before)} spellings -> {len(country_after)}: " + ", ".join(sorted(country_after)))
     if repaired:
         print(f"Coordinates with a stray trailing period or degree sign repaired: {repaired:,}")
+    if host_filled:
+        print("Destinations filled from the same host's other rows (rows): "
+              + ", ".join(f"{host} ({count:,})" for host, count in host_filled.items()))
+    if host_ambiguous:
+        print("Not filled, the host has more than one location: " + ", ".join(host_ambiguous))
     if all(name in headers_out for name in COORDINATE_COLUMNS):
         columns = [headers_out.index(name) for name in COORDINATE_COLUMNS]
         def readable(value):

@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase-admin/app'
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
+import { dashboardDatabase } from './database.js'
 
 initializeApp()
-const db = getFirestore()
+const db = dashboardDatabase()
 const requestedVersion = process.argv[2] || ''
 const configRef = db.doc('config/dashboard')
 

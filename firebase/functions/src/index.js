@@ -1,18 +1,18 @@
 import { initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
 import { setGlobalOptions } from 'firebase-functions/v2'
 import { onRequest } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { logger } from 'firebase-functions'
 import { getDashboardData } from './dashboard.js'
+import { dashboardDatabase } from './database.js'
 import { getForeignStudents } from './foreign-students.js'
 import { processCsvObject } from './importer.js'
 import { getReportsResponse } from './reports.js'
 import { getSiapResponse } from './siap.js'
 
 initializeApp()
-const db = getFirestore()
+const db = dashboardDatabase()
 db.settings({ ignoreUndefinedProperties: true })
 
 const REGION = process.env.DASHBOARD_FUNCTION_REGION || 'asia-southeast1'

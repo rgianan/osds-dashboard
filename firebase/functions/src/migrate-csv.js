@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
+import { dashboardDatabase } from './database.js'
 
 const fileArgument = process.argv[2]
 if (!fileArgument) throw new Error('Usage: npm run migrate:csv -- <path-to-csv>')
@@ -23,7 +23,7 @@ await bucket.upload(filePath, {
 })
 
 console.log(`Uploaded ${basename(filePath)} as import ${importId}. Waiting for activation...`)
-const db = getFirestore()
+const db = dashboardDatabase()
 const deadline = Date.now() + 20 * 60 * 1000
 while (Date.now() < deadline) {
   const snapshot = await db.doc(`imports/${importId}`).get()

@@ -9,8 +9,8 @@ import { NavContext } from '../lib/navigation.js'
 // description: one line for its card on the Home page.
 // hidden: left out of the sidebar and Home; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
-  { id: 'home', label: 'Home', title: 'Home', href: '#/home', documentTitle: 'CHED Data Dashboards', icon: Home },
-  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', group: 'Students and mobility', description: 'Student Internship Abroad Program: interns, endorsements, destinations, and host organizations.', href: '#/siap', documentTitle: 'SIAP Executive Dashboard', icon: Plane },
+  { id: 'home', label: 'Home', title: 'Home', href: '#/home', documentTitle: 'OSDS Data dashboards | CHED', icon: Home },
+  { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', group: 'Students and mobility', description: 'Student Internship Abroad Program: interns, endorsements, destinations, and host organizations.', href: '#/siap', documentTitle: 'SIAP Analytics | CHED', icon: Plane },
   { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', group: 'Students and mobility', description: 'Foreign students enrolled in Philippine HEIs, by academic year, nationality, region, and city.', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
   { id: 'tosf', label: 'TOSF Increase', title: 'TOSF Increase', group: 'Fees and compliance', description: 'Applications to increase tuition and other school fees, and the results of CHED’s appeal.', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
   { id: 'anti-hazing', label: 'Anti-Hazing Law', title: 'Anti-Hazing Law (RA 11053)', group: 'Fees and compliance', description: 'How higher education institutions report implementing the Anti-Hazing Law.', href: '#/anti-hazing', documentTitle: 'Anti-Hazing Law (RA 11053) | CHED', icon: ShieldCheck },

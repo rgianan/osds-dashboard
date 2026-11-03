@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { DASHBOARD_GROUPS, DASHBOARD_VIEWS } from './DashboardShell.jsx'
+import chedLogo from '../assets/ched-logo.png'
 
 // One line: the page header already names the commission (or the dashboard's group).
 function Brand({ compact = false }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <span className="flex h-9 w-11 shrink-0 items-center justify-center rounded-lg bg-[#102a43] text-xs font-black tracking-wide text-white">CHED</span>
-      {compact ? null : <span className="truncate text-sm font-bold text-slate-950">Data dashboards</span>}
+      <img src={chedLogo} alt="Commission on Higher Education" width="40" height="40" className="h-10 w-10 shrink-0" />
+      {compact ? null : <span className="truncate text-sm font-bold text-slate-950">OSDS Data dashboards</span>}
     </div>
   )
 }

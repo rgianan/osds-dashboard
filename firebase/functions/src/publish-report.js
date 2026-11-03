@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { initializeApp } from 'firebase-admin/app'
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
+import { dashboardDatabase } from './database.js'
 import { REPORT_ID_PATTERN, REPORTS_COLLECTION, validateReport } from './reports.js'
 
 const KEEP_VERSIONS = 5
@@ -28,7 +29,7 @@ const report = validateReport(JSON.parse(readFileSync(filePath, 'utf8')))
 if (report.id !== reportId) throw new Error(`The file contains report "${report.id}", not "${reportId}".`)
 
 initializeApp({ projectId: projectId() })
-const db = getFirestore()
+const db = dashboardDatabase()
 const reportRef = db.doc(`${REPORTS_COLLECTION}/${reportId}`)
 const version = `v-${new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-')}`
 

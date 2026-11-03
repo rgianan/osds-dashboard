@@ -93,21 +93,25 @@ export default function HomeDashboard() {
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
         <PageIntro titleId="home-title" title="All dashboards" description="Each card shows a dashboard's latest headline number. Open one to explore and filter its data." />
 
-        {DASHBOARD_GROUPS.map((group) => {
-          const items = views.filter((view) => view.group === group)
-          if (!items.length) return null
-          const headingId = `group-${group.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
-          return (
-            <section key={group} className="mt-6" aria-labelledby={headingId}>
-              <h3 id={headingId} className="text-xs font-bold uppercase tracking-wide text-slate-600">{group}</h3>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-                {items.map((view) => (
-                  <DashboardCard key={view.id} view={view} headline={headlines[view.id] || (HEADLINES[view.id] ? { status: 'loading' } : null)} />
-                ))}
-              </div>
-            </section>
-          )
-        })}
+        {/* On laptop screens and wider the groups sit side by side, so every card fits on
+            one screen without scrolling. */}
+        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+          {DASHBOARD_GROUPS.map((group) => {
+            const items = views.filter((view) => view.group === group)
+            if (!items.length) return null
+            const headingId = `group-${group.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+            return (
+              <section key={group} className="flex flex-col" aria-labelledby={headingId}>
+                <h3 id={headingId} className="text-xs font-bold uppercase tracking-wide text-slate-600">{group}</h3>
+                <div className="mt-3 grid flex-1 gap-4 sm:grid-cols-2">
+                  {items.map((view) => (
+                    <DashboardCard key={view.id} view={view} headline={headlines[view.id] || (HEADLINES[view.id] ? { status: 'loading' } : null)} />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+        </div>
       </main>
     </>
   )

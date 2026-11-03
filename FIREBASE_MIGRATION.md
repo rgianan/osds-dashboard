@@ -17,7 +17,9 @@ Intern names are deliberately not accepted or stored. The normalized dataset con
 ## 1. Create and configure Firebase
 
 1. Create a Firebase project and attach billing. Cloud Functions and production Cloud Storage event processing require the Blaze plan.
-2. Create Firestore in Native mode. Select a location near the dashboard's users and keep Firestore, Storage, and Functions in compatible nearby regions. The checked-in Functions default is `asia-southeast1`.
+2. Create a Firestore database in Native mode with the ID `osds-dash` in `asia-southeast1`, the same region as Storage and the checked-in Functions default. A database's location cannot be changed later. The functions and scripts read the ID from `DASHBOARD_FIRESTORE_DATABASE`, which defaults to `osds-dash`. Do not use the project's `(default)` database: in this project it is in `nam5` (United States), and every read from it crossed the Pacific.
+
+   `osds-dash` is an Enterprise edition database. Enterprise edition creates no indexes automatically and does not accept single-field index settings, so `firestore.indexes.json` holds only the time-to-live rule that deletes expired chart caches. Queries without an index scan their collection, which is fast at the dashboard's size; add an Enterprise index if a dataset grows into hundreds of thousands of rows.
 3. Create the default Cloud Storage bucket.
 4. In Authentication, enable the Google provider.
 5. In Authentication > Settings > Authorized domains, add the production Netlify hostname.

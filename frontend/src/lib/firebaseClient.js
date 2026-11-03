@@ -21,7 +21,8 @@ export function getFirebaseServices() {
   if (services) return services
   const app = getApps().length ? getApp() : initializeApp(config)
   const auth = getAuth(app)
-  const db = getFirestore(app)
+  // The dashboard's database in asia-southeast1, not the project's (default) one.
+  const db = getFirestore(app, import.meta.env.VITE_FIREBASE_DATABASE_ID || 'osds-dash')
   const storage = getStorage(app)
 
   if (import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true' && !emulatorsConnected) {
