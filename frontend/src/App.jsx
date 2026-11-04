@@ -1,21 +1,19 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Activity,
-  BarChart3,
   CalendarClock,
   CheckCircle2,
   Clock3,
   FileCheck2,
-  Globe2,
-  GraduationCap,
-  Lightbulb,
+  Sparkles,
   TimerReset,
   Users,
 } from 'lucide-react'
 import { postJson } from './lib/api.js'
 import { formatDataDate, n, sexLabel, shortProgramName, shortRegionName } from './lib/format.js'
 import { KpiCard, Panel } from './components/Panel.jsx'
-import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, PageIntro, Visualization } from './components/DashboardShell.jsx'
+import { DASHBOARD_VIEWS, DEFAULT_VIEW_ID, DataTable, DefinitionNote, EmptyState, ErrorAlert, FilterBar, Header, Visualization } from './components/DashboardShell.jsx'
+import { MonthColumns, RankBars } from './components/BarList.jsx'
 import { MobileMenu, Sidebar } from './components/Sidebar.jsx'
 import { NavContext } from './lib/navigation.js'
 
@@ -36,10 +34,10 @@ const VIEW_COMPONENTS = {
 
 const DEFAULT_FILTERS = { year: '', country: '', region: '', sex: '', quarter: '' }
 const TABS = [
-  { id: 'overview', label: 'Overview', title: 'Executive overview', description: 'Who the interns are: where they come from, where they go, and what they study.', icon: BarChart3 },
-  { id: 'timeline', label: 'Timeline', title: 'Internship timeline', description: 'Upcoming completions, and monthly endorsements, starts, and completions.', icon: TimerReset },
-  { id: 'hei', label: 'HEI risk', title: 'HEI concentration risk', description: 'Institution participation, destination mix, and concentration indicators.', icon: GraduationCap },
-  { id: 'geo', label: 'Geography', title: 'Destinations and host organizations', description: 'Where interns go and which organizations receive them.', icon: Globe2 },
+  { id: 'overview', label: 'Overview' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'hei', label: 'HEIs' },
+  { id: 'geo', label: 'Geography' },
 ]
 const SECTION_BY_TAB = { overview: 'overview', timeline: 'timeline', hei: 'hei', geo: 'geography' }
 const EMPTY_DASHBOARD = { overview: null, timeline: null, hei: null, geography: null }
@@ -55,42 +53,58 @@ function useDebouncedFilters(filters, delay = 300) {
   return debounced
 }
 
-function SectionIntro({ tab, filters }) {
-  const item = TABS.find((candidate) => candidate.id === tab)
-  const activeFilters = Object.values(filters).filter(Boolean).length
-  return (
-    <PageIntro
-      title={item.title}
-      description={item.description}
-      aside={activeFilters ? `View refined by ${activeFilters} filter${activeFilters === 1 ? '' : 's'}` : 'All records included'}
-    />
-  )
-}
-
+// The navy "What stands out" band of the Timeline, HEI and Geography tabs: a few facts
+// about the current selection, each a label, a headline and one line of detail.
 function InsightSummary({ items }) {
   const safeItems = items.filter(Boolean)
   if (!safeItems.length) return null
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-cyan-50" aria-labelledby="insights-title">
+    <section className="overflow-hidden rounded-[14px] bg-gradient-to-br from-brand-navy to-[#123F86] text-white" aria-labelledby="insights-title">
       <div className="grid md:grid-cols-[220px_1fr]">
-        <div className="flex items-start gap-3 border-b border-blue-100 px-5 py-4 md:border-b-0 md:border-r">
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm"><Lightbulb size={17} aria-hidden="true" /></span>
-          <div>
-            <h3 id="insights-title" className="text-sm font-bold text-slate-900">What stands out</h3>
-            <p className="mt-1 text-xs leading-5 text-slate-600">A quick reading of the current selection.</p>
-          </div>
-        </div>
-        <div className="grid divide-y divide-blue-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
+        <InsightsHeading className="border-b border-white/10 px-5 py-4 md:border-b-0 md:border-r" />
+        <div className="grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3">
           {safeItems.map((item) => (
             <div key={item.label} className="px-5 py-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-600">{item.label}</p>
-              <p className="mt-1 text-sm font-bold text-slate-900">{item.title}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-600">{item.detail}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#A9B8D6]">{item.label}</p>
+              <p className="mt-1 text-sm font-semibold text-[#F2C94C]">{item.title}</p>
+              <p className="mt-1 text-xs leading-5 text-[#E6ECF8]">{item.detail}</p>
             </div>
           ))}
         </div>
       </div>
+    </section>
+  )
+}
+
+function InsightsHeading({ className = '' }) {
+  return (
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <Sparkles size={18} className="shrink-0 text-brand-gold" aria-hidden="true" />
+      <div>
+        <h3 id="insights-title" className="text-[15px] font-semibold text-white">What stands out</h3>
+        <p className="text-xs text-[#A9B8D6]">For the current filters</p>
+      </div>
+    </div>
+  )
+}
+
+// Overview's version of the band: a column beside the destination chart, each fact a
+// large figure and a sentence.
+function InsightsPanel({ items }) {
+  const safeItems = items.filter(Boolean)
+  if (!safeItems.length) return null
+  return (
+    <section className="flex flex-col gap-2 rounded-[14px] bg-gradient-to-br from-brand-navy to-[#123F86] p-5 sm:p-[22px]" aria-labelledby="insights-title">
+      <InsightsHeading />
+      <ul className="mt-2 flex flex-col">
+        {safeItems.map((item) => (
+          <li key={item.text} className="flex gap-3.5 border-t border-white/10 py-3.5 last:pb-0">
+            <span className="w-16 shrink-0 text-[22px] font-bold leading-7 text-[#F2C94C] tabular-nums">{item.stat}</span>
+            <span className="text-[13px] leading-[19px] text-[#E6ECF8]">{item.text}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
@@ -110,48 +124,73 @@ function countColumns(nameLabel, valueKey = 'totalInterns', valueLabel = 'Intern
   return [{ key: 'name', label: nameLabel }, { key: valueKey, label: valueLabel, num: true }]
 }
 
+// Region names without their number ("13 - NCR" -> "NCR"): the number only sorts them.
+function regionDisplayName(region) {
+  return shortRegionName(region).replace(/^\d+\s*-\s*/, '')
+}
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const monthName = (yearMonth) => `${MONTH_NAMES[Number(yearMonth.slice(5, 7)) - 1]} ${yearMonth.slice(0, 4)}`
+// Programs counted together in "What stands out".
+const HOSPITALITY_PROGRAM = /hospitality|tourism|hotel|restaurant|travel/i
+const ENDORSEMENT_MONTHS_SHOWN = 13
+
 // Each tab answers one question, so a chart lives where its question is asked:
-// Overview = who the interns are, Timeline = when, HEI risk = which institutions,
+// Overview = who the interns are, Timeline = when, HEIs = which institutions,
 // Geography = where they go.
 function Overview({ data }) {
   const overview = data.overview || {}
-  const regions = renamed(overview.internsByRegion, shortRegionName)
-  const sexes = renamed(overview.bySex, sexLabel)
-  const topCountry = overview.internsByCountry?.[0]
-  const topProgram = overview.internsByProgram?.[0]
   const totalInterns = Number(overview.totalInterns || 0)
+  const countries = (overview.internsByCountry || []).map((row) => ({ name: row.name, value: row.totalInterns }))
+  const regions = (overview.internsByRegion || []).map((row) => ({ name: regionDisplayName(row.name), value: row.totalInterns }))
+  const sexes = renamed(overview.bySex, sexLabel)
+  const months = (overview.endorsementsByMonth || [])
+    .filter((row) => /^\d{4}-\d{2}$/.test(row.yearMonth))
+    .slice(-ENDORSEMENT_MONTHS_SHOWN)
+    .map((row) => ({ yearMonth: row.yearMonth, value: row.totalEndorsements }))
+  const monthTotal = months.reduce((sum, row) => sum + Number(row.value || 0), 0)
+  const hospitality = (overview.internsByProgram || []).filter((row) => HOSPITALITY_PROGRAM.test(row.name)).reduce((sum, row) => sum + Number(row.totalInterns || 0), 0)
+  const [topCountry] = countries
+  const [topRegion, secondRegion] = regions
   const insights = [
-    topCountry && { label: 'Leading destination', title: topCountry.name, detail: `${n(topCountry.totalInterns)} interns, or ${percent(topCountry.totalInterns, totalInterns)} of the current selection.` },
-    { label: 'Currently active', title: `${n(overview.activeInternshipsToday)} internships`, detail: `${percent(overview.activeInternshipsToday, totalInterns)} of selected interns are active today.` },
-    topProgram && { label: 'Top program', title: topProgram.name, detail: `${n(topProgram.totalInterns)} participating interns in the current selection.` },
+    topCountry && { stat: percent(topCountry.value, totalInterns), text: `of interns go to ${topCountry.name}, the top destination.` },
+    hospitality && { stat: percent(hospitality, totalInterns), text: 'are in hospitality, hotel, or tourism programs.' },
+    topRegion && { stat: percent(topRegion.value, totalInterns), text: `of interns come from HEIs in ${topRegion.name}${secondRegion ? `, followed by ${secondRegion.name} (${percent(secondRegion.value, totalInterns)})` : ''}.` },
+    { stat: n(overview.activeInternshipsToday), text: `internships are active today, ${percent(overview.activeInternshipsToday, totalInterns)} of all interns.` },
   ]
 
   return (
     <div className="grid gap-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <KpiCard icon={Users} label="Total interns" value={n(overview.totalInterns)} hint="People in the current selection" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiCard icon={Users} label="Total interns" value={n(overview.totalInterns)} hint={`Across ${n(overview.totalEndorsements)} endorsements`} />
         <KpiCard icon={FileCheck2} label="Endorsements" value={n(overview.totalEndorsements)} hint="Unique endorsement records" />
-        <KpiCard icon={Activity} label="Active today" value={n(overview.activeInternshipsToday)} hint="Internships active on this date" />
-        <KpiCard icon={Clock3} label="Average lead time" value={n(overview.avgLeadTimeDays, 1)} suffix="days" hint="Endorsement to internship start" />
+        <KpiCard icon={Activity} label="Active today" value={n(overview.activeInternshipsToday)} hint={`${percent(overview.activeInternshipsToday, totalInterns)} of all interns`} />
+        <KpiCard icon={Clock3} label="Average lead time" value={n(overview.avgLeadTimeDays, 1)} suffix="days" hint="From endorsement to start date" />
         <KpiCard icon={CalendarClock} label="Average duration" value={n(overview.avgDurationWorkHours, 0)} suffix="hours" hint="Weekdays multiplied by 8 hours" />
       </div>
 
-      <InsightSummary items={insights} />
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Panel title="Interns by destination" subtitle={`Top ${countries.length} host countries, share of all interns`}>
+          {countries.length ? <RankBars rows={countries} total={totalInterns} label="Interns by destination country" /> : <EmptyState title="No destination data" compact />}
+        </Panel>
+        <InsightsPanel items={insights} />
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Interns by region" subtitle="Sorted for easier comparison">
-          <Visualization data={regions} height={320} label="Horizontal bar chart of interns by region" emptyTitle="No regional data" columns={countColumns('Region')}>
-            <HorizontalBars data={regions} height={320} color="#2563eb" />
+        <Panel title="Interns by home region" subtitle="Region of the sending HEI, share of all interns">
+          {regions.length ? <RankBars rows={regions} total={totalInterns} label="Interns by home region" /> : <EmptyState title="No regional data" compact />}
+        </Panel>
+        <Panel title="Endorsements per month" subtitle={months.length ? `${monthName(months[0].yearMonth)} \u2013 ${monthName(months[months.length - 1].yearMonth)}, ${n(monthTotal)} endorsements` : 'Unique endorsements by month'}>
+          <Visualization data={months} height={260} label="Column chart of endorsements per month" emptyTitle="No endorsement activity" columns={[{ key: 'yearMonth', label: 'Month' }, { key: 'value', label: 'Endorsements', num: true }]}>
+            <MonthColumns rows={months} count={ENDORSEMENT_MONTHS_SHOWN} />
           </Visualization>
         </Panel>
-        <Panel title="Interns by destination" subtitle="Top destination countries">
-          <Visualization data={overview.internsByCountry} height={320} label="Horizontal bar chart of interns by destination country" emptyTitle="No destination data" columns={countColumns('Country')}>
-            <HorizontalBars data={overview.internsByCountry || []} height={320} color="#0f766e" />
-          </Visualization>
-        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="Programs represented" subtitle="Programs with the most participating interns">
           <Visualization data={overview.internsByProgram} height={360} label="Horizontal bar chart of interns by academic program" emptyTitle="No program data" columns={countColumns('Program')}>
-            <HorizontalBars data={overview.internsByProgram || []} height={360} color="#7c3aed" labelWidth={200} labelLimit={40} tickFormat={shortProgramName} />
+            <HorizontalBars data={overview.internsByProgram || []} height={360} color="#0038A8" labelWidth={200} labelLimit={40} tickFormat={shortProgramName} />
           </Visualization>
         </Panel>
         <Panel title="Interns by sex" subtitle="Share of interns in this selection">
@@ -271,7 +310,7 @@ function Geography({ data }) {
   const geography = data.geography || {}
   const topCountry = geography.internsByCountry?.[0]
   const topHost = geography.hosts?.[0]
-  // Same rule as HEI risk: divide by the selection, not by the ten countries charted.
+  // Same rule as HEIs: divide by the selection, not by the ten countries charted.
   const totalInterns = Number(geography.totalInterns ?? data.overview?.totalInterns ?? (geography.internsByCountry || []).reduce((sum, row) => sum + Number(row.totalInterns || 0), 0))
   return (
     <div className="grid gap-5">
@@ -435,10 +474,8 @@ function SiapDashboard() {
       />
 
       <main id="dashboard-content" tabIndex={-1} className="mx-auto max-w-[1600px] px-4 py-5 outline-none sm:px-6 sm:pb-7 lg:px-8">
-        {/* Every page reads in one order: what this page is, then the filters, then the data. */}
-        <SectionIntro tab={tab} filters={filters} />
-
-        {section ? <div className="mt-4"><FilterBar
+        {/* Every page reads in one order: the filters, then the data. */}
+        {section ? <div><FilterBar
           fields={filterFields}
           filters={filters}
           onChange={updateFilter}
@@ -537,7 +574,7 @@ export default function App() {
   const ViewComponent = VIEW_COMPONENTS[view]
   return (
     <NavContext.Provider value={navigation}>
-      <div className="min-h-screen bg-[#f6f8fb] text-slate-900 lg:flex">
+      <div className="min-h-screen bg-page text-ink lg:flex">
         <a href="#dashboard-content" onClick={skipToContent} className="sr-only z-[1200] rounded-md bg-white px-4 py-2 font-semibold text-blue-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-2 focus:ring-blue-500">Skip to dashboard content</a>
         <Sidebar activeView={view} collapsed={sidebarCollapsed} onToggleCollapsed={toggleSidebar} />
         <MobileMenu activeView={view} open={menuOpen} onClose={closeMenu} />

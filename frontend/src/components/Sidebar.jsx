@@ -3,12 +3,17 @@ import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { DASHBOARD_GROUPS, DASHBOARD_VIEWS } from './DashboardShell.jsx'
 import chedLogo from '../assets/ched-logo.png'
 
-// One line: the page header already names the commission (or the dashboard's group).
+// The sidebar and phone menu are CHED navy; text and icons on it are white or a muted blue.
 function Brand({ compact = false }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <img src={chedLogo} alt="Commission on Higher Education" width="40" height="40" className="h-10 w-10 shrink-0" />
-      {compact ? null : <span className="truncate text-sm font-bold text-slate-950">OSDS Data dashboards</span>}
+      {compact ? null : (
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-bold leading-5 text-white">OSDS Data dashboards</p>
+          <p className="text-xs leading-4 text-[#A9B8D6]">Commission on Higher Education</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -21,9 +26,12 @@ function NavLink({ view, active, collapsed, onNavigate }) {
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       title={collapsed ? view.label : undefined}
-      className={`flex min-h-11 items-center gap-3 rounded-lg text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${collapsed ? 'justify-center' : 'px-3'} ${active ? 'bg-blue-50 text-blue-800' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'}`}
+      className={`relative flex min-h-11 items-center gap-3 rounded-lg text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold ${collapsed ? 'justify-center' : 'px-3'} ${active ? 'bg-white/10 font-semibold text-white' : 'font-normal text-[#D3DCEE] hover:bg-white/5 hover:text-white'}`}
     >
-      <Icon size={18} className="shrink-0" aria-hidden="true" />
+      {/* The gold bar marks the current page without relying on colour alone: the link
+          also carries aria-current and bold text. */}
+      {active ? <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-r bg-brand-gold" aria-hidden="true" /> : null}
+      <Icon size={18} className={`shrink-0 ${active ? 'text-white' : 'text-[#A9B8D6]'}`} aria-hidden="true" />
       <span className={collapsed ? 'sr-only' : 'truncate'}>{view.label}</span>
     </a>
   )
@@ -34,16 +42,16 @@ function NavList({ activeView, collapsed = false, onNavigate }) {
   const views = DASHBOARD_VIEWS.filter((view) => !view.hidden || view.id === activeView)
   const link = (view) => <NavLink key={view.id} view={view} active={view.id === activeView} collapsed={collapsed} onNavigate={onNavigate} />
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-0.5">
       {views.filter((view) => !view.group).map(link)}
       {DASHBOARD_GROUPS.map((group) => {
         const items = views.filter((view) => view.group === group)
         if (!items.length) return null
         return (
-          <div key={group} role="group" aria-label={group} className="mt-4 flex flex-col gap-1">
+          <div key={group} role="group" aria-label={group} className="mt-4 flex flex-col gap-0.5">
             {collapsed
-              ? <div className="mx-auto mb-1 h-px w-8 bg-slate-200" aria-hidden="true" />
-              : <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500" aria-hidden="true">{group}</p>}
+              ? <div className="mx-auto mb-1 h-px w-8 bg-white/15" aria-hidden="true" />
+              : <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#7F93BA]" aria-hidden="true">{group}</p>}
             {items.map(link)}
           </div>
         )
@@ -56,27 +64,25 @@ function NavList({ activeView, collapsed = false, onNavigate }) {
 // collapse to a strip of icons to give charts more width.
 export function Sidebar({ activeView, collapsed, onToggleCollapsed }) {
   return (
-    <aside className={`hidden shrink-0 border-r border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col ${collapsed ? 'lg:w-[76px]' : 'lg:w-60'}`}>
-      {/* No divider here: the page header's bottom line sits at a different height on each
-          page, and two lines that don't meet read as misaligned. The brand row matches the
-          header's title row (20px top padding, 44px row) so the two line up across the top. */}
-      <div className={`flex h-[68px] shrink-0 items-start pt-5 ${collapsed ? 'justify-center' : 'px-4'}`}>
-        <div className="flex h-11 items-center"><Brand compact={collapsed} /></div>
+    <aside className={`hidden shrink-0 bg-brand-navy lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col ${collapsed ? 'lg:w-[76px]' : 'lg:w-64'}`}>
+      <div className={`shrink-0 pb-4 pt-5 ${collapsed ? 'flex justify-center px-2' : 'px-4'}`}>
+        <Brand compact={collapsed} />
       </div>
-      <nav className={`flex-1 overflow-y-auto pb-4 pt-6 ${collapsed ? 'px-2' : 'px-3'}`} aria-label="Dashboards">
+      <div className={`h-px shrink-0 bg-white/10 ${collapsed ? 'mx-3' : 'mx-4'}`} aria-hidden="true" />
+      <nav className={`flex-1 overflow-y-auto pb-4 pt-4 ${collapsed ? 'px-2' : 'px-3'}`} aria-label="Dashboards">
         <NavList activeView={activeView} collapsed={collapsed} />
       </nav>
-      <div className={`border-t border-slate-200 py-3 ${collapsed ? 'px-2' : 'px-3'}`}>
+      <div className={`py-3 ${collapsed ? 'px-2' : 'px-3'}`}>
         <button
           type="button"
           onClick={onToggleCollapsed}
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand the sidebar' : 'Collapse the sidebar'}
           title={collapsed ? 'Expand the sidebar' : undefined}
-          className={`flex min-h-10 w-full items-center gap-3 rounded-lg text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${collapsed ? 'justify-center' : 'px-3'}`}
+          className={`flex min-h-10 w-full items-center gap-3 rounded-lg text-[13px] text-[#A9B8D6] transition hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold ${collapsed ? 'justify-center' : 'px-3'}`}
         >
           {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
-          {collapsed ? null : <span>Collapse</span>}
+          {collapsed ? null : <span>Collapse sidebar</span>}
         </button>
       </div>
     </aside>
@@ -108,16 +114,16 @@ export function MobileMenu({ activeView, open, onClose }) {
   // z-index above Leaflet's map controls (1000), which share the page's stacking context.
   return (
     <div className="fixed inset-0 z-[1100] lg:hidden">
-      <div className="absolute inset-0 bg-slate-950/40" onClick={onClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" aria-label="Dashboards" className="absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col bg-white shadow-xl">
-        <div className="flex min-h-16 items-center justify-between gap-3 border-b border-slate-200 pl-4 pr-2">
+      <div className="absolute inset-0 bg-slate-950/50" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" aria-label="Dashboards" className="absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col bg-brand-navy shadow-xl">
+        <div className="flex min-h-[68px] items-center justify-between gap-3 border-b border-white/10 pl-4 pr-2">
           <Brand />
           <button
             ref={closeButton}
             type="button"
             onClick={onClose}
             aria-label="Close the dashboard menu"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[#D3DCEE] transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
           >
             <X size={20} aria-hidden="true" />
           </button>

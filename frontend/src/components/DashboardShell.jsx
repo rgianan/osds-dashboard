@@ -1,5 +1,5 @@
 import { Suspense, useContext } from 'react'
-import { AlertTriangle, Banknote, BarChart3, ChevronDown, Filter, Globe2, Home, Menu, Plane, RefreshCw, RotateCcw, ShieldCheck, X } from 'lucide-react'
+import { AlertTriangle, Banknote, BarChart3, CalendarDays, ChevronDown, Globe2, Home, Menu, Plane, RefreshCw, RotateCcw, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
 import { n } from '../lib/format.js'
 import { NavContext } from '../lib/navigation.js'
 
@@ -9,7 +9,7 @@ import { NavContext } from '../lib/navigation.js'
 // description: one line for its card on the Home page.
 // hidden: left out of the sidebar and Home; the page still opens from a direct #/<id> link.
 export const DASHBOARD_VIEWS = [
-  { id: 'home', label: 'Home', title: 'Home', href: '#/home', documentTitle: 'OSDS Data dashboards | CHED', icon: Home },
+  { id: 'home', label: 'Home', title: 'Dashboards', href: '#/home', documentTitle: 'OSDS Data dashboards | CHED', icon: Home },
   { id: 'siap', label: 'SIAP', title: 'SIAP Analytics', group: 'Students and mobility', description: 'Student Internship Abroad Program: interns, endorsements, destinations, and host organizations.', href: '#/siap', documentTitle: 'SIAP Analytics | CHED', icon: Plane },
   { id: 'foreign-students', label: 'Foreign Students Data', title: 'Foreign Students Data', group: 'Students and mobility', description: 'Foreign students enrolled in Philippine HEIs, by academic year, nationality, region, and city.', href: '#/foreign-students', documentTitle: 'Foreign Students Data | CHED', icon: Globe2 },
   { id: 'tosf', label: 'TOSF Increase', title: 'TOSF Increase', group: 'Fees and compliance', description: 'Applications to increase tuition and other school fees, and the results of CHED’s appeal.', href: '#/tosf', documentTitle: 'TOSF Increase | CHED', icon: Banknote },
@@ -78,8 +78,8 @@ export function PageIntro({ title, titleId, description, aside = null }) {
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
       <div className="flex min-w-0 flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-3">
-        <h2 id={titleId} className="shrink-0 text-base font-semibold text-slate-950">{title}</h2>
-        <p className="text-sm leading-6 text-slate-600">{description}</p>
+        <h2 id={titleId} className="shrink-0 text-base font-semibold text-ink">{title}</h2>
+        <p className="text-sm leading-6 text-ink-2">{description}</p>
       </div>
       {aside ? <p className="shrink-0 text-xs font-medium text-slate-600">{aside}</p> : null}
     </div>
@@ -124,28 +124,27 @@ export function DataTable({ rows, columns, caption }) {
 const asIs = (value) => value
 
 // format changes only what is shown (such as "F" -> "Female"); the value stays the raw option.
+// The label sits inside the box, before the value, so a row of five fits one line.
 function Select({ id, label, value, options, onChange, allLabel = 'All', format = asIs }) {
   return (
-    <label htmlFor={id} className="min-w-0">
-      <span className="mb-1.5 block text-xs font-semibold text-slate-600">{label}</span>
-      <span className="relative block">
-        <select
-          id={id}
-          className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 lg:h-10"
-          value={value || ''}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">{allLabel}</option>
-          {(options || []).map((option) => <option key={option} value={option}>{format(option)}</option>)}
-        </select>
-        <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-      </span>
+    <label htmlFor={id} className="relative flex h-11 min-w-0 items-center gap-1.5 rounded-lg border border-[#D5DCE6] bg-white pl-3 pr-8 transition hover:border-slate-400 focus-within:border-brand-blue focus-within:ring-4 focus-within:ring-blue-100 lg:h-10">
+      <span className="shrink-0 text-xs text-ink-3">{label}</span>
+      <select
+        id={id}
+        className="h-full min-w-0 flex-1 cursor-pointer appearance-none truncate bg-transparent text-[13px] font-semibold text-ink outline-none"
+        value={value || ''}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">{allLabel}</option>
+        {(options || []).map((option) => <option key={option} value={option}>{format(option)}</option>)}
+      </select>
+      <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-2" aria-hidden="true" />
     </label>
   )
 }
 
 // dataAsOf: the data's date, already formatted (formatDataDate); every page shows it the
-// same way. null leaves the date out (Home has no single data date).
+// same way. null leaves the date out.
 // The dashboards themselves are listed in the sidebar (Sidebar.jsx); on phones the
 // header's menu button opens them.
 export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefresh = false, loading = false, tabs = null, tab, onTabChange }) {
@@ -169,8 +168,8 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
     // Below lg the header stays at the top of the screen so the menu button (the only way
     // to other dashboards there) is always one tap away; it is kept to one row plus tabs.
     // On desktop the sidebar does that job and the header scrolls with the page.
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white lg:static">
-      <div className={`mx-auto max-w-[1600px] px-4 pt-3 sm:px-6 sm:pt-5 lg:px-8 ${tabs ? '' : 'pb-3 sm:pb-4'}`}>
+    <header className="sticky top-0 z-30 border-b border-line bg-white lg:static">
+      <div className={`mx-auto max-w-[1600px] px-4 pt-3 sm:px-6 sm:pt-[18px] lg:px-8 ${tabs ? '' : 'pb-3 sm:pb-[18px]'}`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -178,26 +177,26 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
               onClick={openMenu}
               aria-expanded={menuOpen}
               aria-label="Open the dashboard menu"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:hidden"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy text-white transition hover:bg-[#12356F] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 lg:hidden"
             >
               <Menu size={20} aria-hidden="true" />
             </button>
             <div className="min-w-0">
-              <p className="hidden text-xs font-bold uppercase tracking-[0.14em] text-blue-700 sm:block">{group || 'Commission on Higher Education'}</p>
-              <h1 className="text-lg font-bold leading-tight tracking-tight text-slate-950 sm:truncate sm:text-2xl">{title}</h1>
-              {dataAsOf === null ? null : <p className="text-xs font-medium text-slate-600 sm:hidden">Data as of {dataAsOf || 'Loading...'}</p>}
+              <p className="hidden text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-blue sm:block">{group || 'Commission on Higher Education'}</p>
+              <h1 className="text-lg font-bold leading-tight tracking-tight text-ink sm:mt-1 sm:truncate sm:text-2xl">{title}</h1>
+              {dataAsOf === null ? null : <p className="text-xs font-medium text-ink-3 sm:hidden">Latest data {dataAsOf || 'loading...'}</p>}
             </div>
           </div>
           {dataAsOf === null && !showRefresh ? null : <div className="flex shrink-0 items-center gap-3">
-            {dataAsOf === null ? null : <div className="hidden text-right sm:block" aria-live="polite">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Data as of</p>
-              <p className="truncate text-xs font-medium text-slate-600">{dataAsOf || 'Loading...'}</p>
-            </div>}
+            {dataAsOf === null ? null : <p className="hidden items-center gap-2 rounded-lg border border-line bg-[#F7F9FC] px-3 py-2 text-[13px] text-ink-2 sm:inline-flex" aria-live="polite">
+              <CalendarDays size={16} aria-hidden="true" />
+              Latest data {dataAsOf || 'loading...'}
+            </p>}
             {showRefresh ? <button
               type="button"
               onClick={onRefresh}
               disabled={loading}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#102a43] px-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#183b56] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0 sm:px-3.5 lg:min-h-10"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-brand-blue px-3 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[#002C86] focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-wait disabled:opacity-60 sm:px-3.5 lg:min-h-[38px]"
               aria-label="Refresh the active dashboard section"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
@@ -207,11 +206,10 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
         </div>
 
         {tabs ? (
-          <nav className="mt-3 -mb-px overflow-x-auto" aria-label="Dashboard sections">
-            {/* Phones: four equal columns with no icons, so every tab is visible without scrolling. */}
-            <div className={`grid sm:flex sm:min-w-max sm:gap-1 ${TAB_GRID_COLUMNS[tabs.length] || 'grid-cols-4'}`} role="tablist">
+          <nav className="mt-2 -mb-px overflow-x-auto sm:mt-3" aria-label="Dashboard sections">
+            {/* Phones: four equal columns, so every tab is visible without scrolling. */}
+            <div className={`grid sm:flex sm:min-w-max sm:gap-7 ${TAB_GRID_COLUMNS[tabs.length] || 'grid-cols-4'}`} role="tablist">
               {tabs.map((item, index) => {
-                const Icon = item.icon
                 const active = tab === item.id
                 return (
                   <button
@@ -224,9 +222,9 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
                     tabIndex={active ? 0 : -1}
                     onClick={() => onTabChange(item.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, index)}
-                    className={`inline-flex min-h-11 items-center justify-center gap-2 border-b-2 px-1 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:justify-start sm:px-3 ${active ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'}`}
+                    className={`inline-flex min-h-11 items-center justify-center border-b-2 py-2 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:justify-start ${active ? 'border-brand-blue font-semibold text-brand-blue' : 'border-transparent text-ink-2 hover:border-slate-300 hover:text-ink'}`}
                   >
-                    <Icon size={16} className="hidden sm:block" aria-hidden="true" /> {item.label}
+                    {item.label}
                   </button>
                 )
               })}
@@ -239,54 +237,56 @@ export function Header({ activeView, title, dataAsOf = '', onRefresh, showRefres
 }
 
 // fields: [{ key, label, options, allLabel, format }]; format controls how an option is shown.
+// Desktop: one card with a "Filters" label, the fields, and Clear all on one row (more
+// than five fields wrap to rows of four). Phones: the fields fold away behind a button.
 export function FilterBar({ fields, filters, onChange, onClear, open, onToggle }) {
   const labels = Object.fromEntries(fields.map((field) => [field.key, field.label]))
   const formats = Object.fromEntries(fields.map((field) => [field.key, field.format || asIs]))
   const activeFilters = fields.map((field) => [field.key, filters[field.key]]).filter(([, value]) => value)
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]" aria-labelledby="filters-title">
-      {/* On desktop the fields are always open and the page intro above already states how
-          many filters are active, so this heading row only shows where the panel collapses. */}
+    <section className="rounded-xl border border-line bg-white shadow-card" aria-labelledby="filters-title">
       <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-5 lg:hidden">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Filter size={16} aria-hidden="true" /></span>
+          <SlidersHorizontal size={16} className="text-ink" aria-hidden="true" />
           <div>
-            <h2 id="filters-title" className="text-sm font-semibold text-slate-900">Filter dashboard</h2>
-            <p className="text-xs text-slate-500">{activeFilters.length ? `${activeFilters.length} active filter${activeFilters.length === 1 ? '' : 's'}` : 'Showing all available records'}</p>
+            <h2 id="filters-title" className="text-sm font-semibold text-ink">Filters</h2>
+            <p className="text-xs text-ink-3">{activeFilters.length ? `${activeFilters.length} active filter${activeFilters.length === 1 ? '' : 's'}` : 'Showing all records'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {activeFilters.length ? (
-            <button type="button" onClick={onClear} className="hidden min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:inline-flex">
-              <RotateCcw size={14} aria-hidden="true" /> Clear all
-            </button>
-          ) : null}
-          <button type="button" onClick={onToggle} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden" aria-expanded={open} aria-controls="dashboard-filters">
-            {open ? 'Hide' : 'Filters'} <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
-          </button>
-        </div>
+        <button type="button" onClick={onToggle} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-blue-500" aria-expanded={open} aria-controls="dashboard-filters">
+          {open ? 'Hide' : 'Show'} <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
       </div>
 
-      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block lg:border-t-0`}>
-        <fieldset>
+      <div id="dashboard-filters" className={`${open ? 'block' : 'hidden'} border-t border-slate-100 px-4 py-4 sm:px-5 lg:block lg:border-t-0 lg:px-3 lg:py-2.5`}>
+        <fieldset className="lg:flex lg:items-start lg:gap-2.5">
           <legend className="sr-only">Dashboard filters</legend>
-          <div className={`grid gap-3 sm:grid-cols-2 ${LG_GRID_COLUMNS[fields.length] || 'lg:grid-cols-5'}`}>
+          <p className="hidden h-10 shrink-0 items-center gap-2 pl-1 pr-2 text-[13px] font-semibold text-ink lg:flex" aria-hidden="true">
+            <SlidersHorizontal size={16} /> Filters
+          </p>
+          <div className={`grid flex-1 gap-2.5 sm:grid-cols-2 ${LG_GRID_COLUMNS[fields.length] || 'lg:grid-cols-5'}`}>
             {fields.map((field) => (
               <Select key={field.key} id={`filter-${field.key}`} label={field.label} value={filters[field.key]} options={field.options} allLabel={field.allLabel} format={formats[field.key]} onChange={(value) => onChange(field.key, value)} />
             ))}
           </div>
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={!activeFilters.length}
+            className="mt-3 inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-brand-blue transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default disabled:text-[#9AA6B8] disabled:hover:bg-transparent lg:mt-0"
+          >
+            <RotateCcw size={14} aria-hidden="true" /> Clear all
+          </button>
         </fieldset>
 
         {activeFilters.length ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Active filters">
+          <div className="mt-2.5 flex flex-wrap items-center gap-2 lg:pl-[92px]" aria-label="Active filters">
             {activeFilters.map(([key, value]) => (
-              <button key={key} type="button" onClick={() => onChange(key, '')} className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Remove ${labels[key]} filter ${formats[key](value)}`}>
-                <span className="text-blue-700">{labels[key]}:</span> {formats[key](value)} <X size={13} aria-hidden="true" />
+              <button key={key} type="button" onClick={() => onChange(key, '')} className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={`Remove ${labels[key]} filter ${formats[key](value)}`}>
+                <span className="text-brand-blue">{labels[key]}:</span> {formats[key](value)} <X size={13} aria-hidden="true" />
               </button>
             ))}
-            {/* From sm to lg the heading row above carries Clear all. */}
-            <button type="button" onClick={onClear} className="min-h-8 rounded-full px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:hidden lg:inline-block">Clear all</button>
           </div>
         ) : null}
       </div>
